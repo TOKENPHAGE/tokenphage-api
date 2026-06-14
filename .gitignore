@@ -1,0 +1,52 @@
+HELP.md
+target/
+.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### VS Code ###
+.vscode/
+
+### Local secrets — 로컬 dev 설정(하드코딩된 PAT 등). 템플릿(.example)만 커밋한다 ###
+src/main/resources/application-dev.yml
+
+### Claude Code 작업 파일(작업 환경 전용 규칙·세션 메타)은 공개하지 않는다 ###
+.claude/
+CLAUDE.md
+
+### OS noise ###
+.DS_Store
+Thumbs.db
+
+### Local env (docker-compose 비밀값) — 템플릿(.env.example)만 커밋 ###
+.env
+.env.local
+
+### 마스코트/배지 리포트 추출용 일회성 유틸 테스트 — 레포에 포함하지 않고 로컬 재생성용으로만 둔다 ###
+src/test/java/com/tokenphage/api/feature/badge/svg/theme/MascotExportTest.java
+src/test/java/com/tokenphage/api/feature/badge/svg/GpuBadgeLevelsReportTest.java
