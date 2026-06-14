@@ -1,0 +1,35 @@
+# 공통 설정 (프로파일 무관). 환경별 값(datasource/redis/시크릿/URL)은
+# application-{dev,prod}.yml 에서 정의한다. 기본 활성 프로파일은 dev.
+spring:
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  datasource:
+    driver-class-name: org.postgresql.Driver
+  data:
+    redis:
+      port: ${REDIS_PORT:6379}
+
+badge:
+  cache-ttl-minutes: 60
+  timezone: ${BADGE_TIMEZONE:Asia/Seoul}
+
+auth:
+  gist:
+    api-base-url: ${GIST_API_BASE_URL:https://api.github.com}
+    challenge-ttl-minutes: ${AUTH_CHALLENGE_TTL_MINUTES:10}
+
+server:
+  port: ${PORT:8080}
+
+audit:
+  executor:
+    core-pool-size: 2
+    max-pool-size: 4
+    queue-capacity: 500

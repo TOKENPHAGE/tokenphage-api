@@ -1,0 +1,17 @@
+spring:
+  datasource:
+    url: ${DATABASE_URL}
+    username: ${DB_USER}
+    password: ${DB_PASS}
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      password: ${REDIS_PASSWORD}
+
+badge:
+  api-base-url: ${API_BASE_URL}
+  jwt-secret: ${JWT_SECRET}
+
+auth:
+  gist:
+    api-token: ${GIST_API_TOKEN}
