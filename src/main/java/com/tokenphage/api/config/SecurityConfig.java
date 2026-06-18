@@ -8,6 +8,7 @@ import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 
@@ -15,11 +16,15 @@ import org.springframework.security.oauth2.jwt.BadJwtException;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Date;
+import java.util.List;
 import java.util.Objects;
 import java.util.HashMap;
 import java.util.Map;
@@ -45,7 +50,8 @@ public class SecurityConfig {
      * <p>
      * 공개 경로(/badge/**, /auth/challenge, /auth/verify)는 인증 없이 접근 가능하며,
      * /api/sync는 JWT 인증이 필요하다. CSRF는 stateless JWT 구조이므로 비활성화한다.
-     * CORS는 브라우저 비대상 API(CLI 전용, 배지는 README의 img 태그로만 노출)이므로 비활성화한다.
+     * CORS는 배지 SVG 조회(/badge/**)에 한해 허용한다 — 미리보기 HTML(file:// → origin "null")이나
+     * 외부 페이지에서 fetch로 SVG를 가져올 수 있도록 한다. (CLI가 호출하는 /api/sync 등 인증 경로는 미적용)
      *
      * @param http Spring Security HttpSecurity 빌더
      * @return 구성된 SecurityFilterChain
@@ -55,7 +61,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                .cors(cors -> cors.disable())
+                .cors(Customizer.withDefaults())
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/badge/**", "/auth/challenge", "/auth/verify").permitAll()
@@ -64,6 +70,27 @@ public class SecurityConfig {
                 )
                 .oauth2ResourceServer(rs -> rs.jwt(jwt -> jwt.decoder(jwtDecoder())));
         return http.build();
+    }
+
+    /**
+     * 배지 SVG 조회 경로(/badge/**)에만 CORS를 허용하는 설정을 등록한다.
+     * <p>
+     * 배지 미리보기 HTML(file:// → origin "null")이나 외부 페이지가 fetch로 SVG를 가져올 수 있어야 한다.
+     * 공개 읽기 전용이고 credentials를 쓰지 않으므로 모든 origin("*")을 GET/OPTIONS에 한해 허용한다.
+     * /api/sync 등 인증 경로는 등록하지 않아 CORS가 적용되지 않는다(브라우저 비대상).
+     *
+     * @return /badge/** 에만 적용되는 CORS 설정 소스
+     * @Since 2026-06-16
+     */
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowedOrigins(List.of("*"));
+        config.setAllowedMethods(List.of("GET", "OPTIONS"));
+        config.setAllowedHeaders(List.of("*"));
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/badge/**", config);
+        return source;
     }
 
     /**
