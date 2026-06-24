@@ -32,7 +32,6 @@ services:
 
   app:
     build: .
-    profiles: ["prod"]
     restart: unless-stopped
     env_file: [.env]
     ports:
