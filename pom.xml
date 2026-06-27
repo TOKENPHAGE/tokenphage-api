@@ -60,11 +60,13 @@
             <groupId>org.aspectj</groupId>
             <artifactId>aspectjweaver</artifactId>
         </dependency>
+        <!-- Spring Boot 4.0 모듈화로 Flyway 오토컨피그가 spring-boot-autoconfigure 에서 spring-boot-flyway 모듈 분리, 없으면 마이그레이션이 자동 실행 X -->
         <dependency>
-            <groupId>org.flywaydb</groupId>
-            <artifactId>flyway-core</artifactId>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-flyway</artifactId>
         </dependency>
         <dependency>
+            <!-- Flyway 10+ 는 DB별 모듈이 분리되어 있어 PostgreSQL 지원을 별도로 추가한다. -->
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-database-postgresql</artifactId>
         </dependency>
