@@ -46,6 +46,39 @@ class SvgBuilderTest {
         return new BadgeResponse("leeyoungseok", 15_430_000L, heatbar, topModels, 0.87);
     }
 
+    private static int count(String text, String token) {
+        int c = 0;
+        int i = 0;
+        while ((i = text.indexOf(token, i)) != -1) {
+            c++;
+            i += token.length();
+        }
+        return c;
+    }
+
+    @Nested @DisplayName("뱃지 링크 (모든 테마·모드 공통 <a> 앵커)")
+    class BadgeLink {
+
+        // 링크 래핑은 BaseBadgeTheme.build 한 곳(공유 코드)에 있으므로 테마별로 나누지 않고
+        // 디스패처를 통해 모든 테마·모드 조합을 한 번에 검증한다("모든 뱃지 공통" 요구사항).
+        private static final String REPO_URL = "https://github.com/TOKENPHAGE/tokenphage-api";
+
+        @ParameterizedTest(name = "theme={0}, mode={1} → 저장소 링크 <a> 앵커 1개")
+        @DisplayName("모든 테마·모드의 뱃지는 저장소 URL <a> 앵커로 정확히 한 번 감싸진다")
+        @CsvSource({ "gpu, light", "gpu, dark", "claude, light", "claude, dark" })
+        void badge_모든테마모드_저장소앵커로감쌈(String theme, String mode) {
+            // given / when
+            String svg = svgBuilder.build(sampleData(), theme, mode);
+            // then
+            assertThat(svg)
+                .contains("<a href=\"" + REPO_URL + "\"")
+                .contains("xlink:href=\"" + REPO_URL + "\"")
+                .contains("</a>");
+            assertThat(count(svg, "<a ")).isEqualTo(1);
+            assertThat(count(svg, "</a>")).isEqualTo(1);
+        }
+    }
+
     @Nested @DisplayName("디스패처 동작")
     class Dispatch {
 
