@@ -16,6 +16,9 @@ import java.util.List;
 @Slf4j
 public abstract class BaseBadgeTheme implements BadgeTheme {
 
+    /** 뱃지 클릭 시 이동할 프로젝트 GitHub 저장소 URL. 모든 테마·모드 공통이며 전 환경 동일한 고정값이다. */
+    private static final String LINK_URL = "https://github.com/TOKENPHAGE/tokenphage-api";
+
     /**
      * 공통 레이아웃에 테마별 마스코트를 끼워 완성된 배지 SVG를 생성한다.
      *
@@ -32,9 +35,14 @@ public abstract class BaseBadgeTheme implements BadgeTheme {
 
         StringBuilder sb = new StringBuilder();
         sb.append("""
-            <svg xmlns="http://www.w3.org/2000/svg" width="540" height="210"
-                 viewBox="0 0 540 210" role="img" aria-label="TokenBadge %s">
+            <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+                 width="540" height="210" viewBox="0 0 540 210" role="img" aria-label="TokenBadge %s">
             """.formatted(escape(data.username())));
+
+        // 뱃지 전체를 프로젝트 저장소 링크로 감싼다. 배경 rect가 전면을 덮어 뱃지 어디를 눌러도 이동한다.
+        sb.append("""
+            <a href="%s" xlink:href="%s">
+            """.formatted(LINK_URL, LINK_URL));
 
         appendBackground(sb, isDark, modeColor);
         sb.append(extraDefs(data, isDark));
@@ -71,6 +79,7 @@ public abstract class BaseBadgeTheme implements BadgeTheme {
 
         appendTopModels(sb, data.topModels(), modeColor);
 
+        sb.append("</a>");
         sb.append("</svg>");
         return sb.toString();
     }
