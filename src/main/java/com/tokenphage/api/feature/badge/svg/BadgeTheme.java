@@ -2,6 +2,8 @@ package com.tokenphage.api.feature.badge.svg;
 
 import com.tokenphage.api.feature.badge.dto.response.BadgeResponse;
 
+import java.util.Set;
+
 public interface BadgeTheme {
 
     /**
@@ -21,4 +23,15 @@ public interface BadgeTheme {
      * @Since 2026-05-27
      */
     String build(BadgeResponse data, boolean isDark);
+
+    /**
+     * 이 테마가 렌더링에 필요로 하는 데이터 종류를 선언한다.
+     * <p>
+     * 조회 서비스는 이 선언에 포함된 데이터만 조회한다. <b>기본 구현을 두지 않는다(정책)</b> —
+     * 모든 구현체가 자신이 쓰는 데이터를 명시적으로 선언해야 한다.
+     *
+     * @return 필요 데이터 종류 집합
+     * @Since 2026-07-16
+     */
+    Set<BadgeDataNeed> needs();
 }
