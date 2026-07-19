@@ -26,7 +26,7 @@ public class BadgeRenderService {
      * 사용자 배지 SVG를 반환한다.
      * <p>
      * theme/mode를 등록된 값으로 정규화한 뒤 캐시 키를 구성한다. 정규화로 캐시 키 카디널리티를
-     * 유한하게 제한해, 임의 theme/mode 입력에 의한 Redis 키 무한 증식을 방지한다.
+     * 유한하게 제한하여, 임의 theme/mode 입력에 의한 Redis 키 무한 증식을 방지한다.
      * 캐시에 값이 있으면 즉시 반환하고, 없으면 DB에서 조회해 SVG를 생성한 뒤 캐시에 저장한다.
      * 캐시 TTL은 설정값 badge.cache-ttl-minutes를 따른다.
      *
@@ -38,6 +38,7 @@ public class BadgeRenderService {
      * @Since 2026-05-27
      */
     public String getSvg(String username, String theme, String mode) {
+
         String normalizedTheme = svgBuilder.normalizeTheme(theme);
         String normalizedMode = svgBuilder.normalizeMode(mode);
         String cacheKey = "badge:" + username + ":" + normalizedTheme + ":" + normalizedMode;
@@ -51,8 +52,8 @@ public class BadgeRenderService {
 
         log.info("Badge cache miss, building SVG: username={}, theme={}, mode={}", username, normalizedTheme, normalizedMode);
 
-        // #1. BadgeQueryService.query() : 배지(SVG)에 필요한 사용자 토큰 정보 조회
-        BadgeResponse data = queryService.query(username);
+        // #1. BadgeQueryService.query() : 정규화된 테마가 선언한 needs에 해당하는 사용자 토큰 정보만 조회
+        BadgeResponse data = queryService.query(username, svgBuilder.needsOf(normalizedTheme));
 
         // #2. 사용자 토큰 정보 + 정규화된 theme/mode로 배지(SVG) 생성
         String svg = svgBuilder.build(data, normalizedTheme, normalizedMode);

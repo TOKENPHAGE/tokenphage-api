@@ -2,7 +2,7 @@ package com.tokenphage.api.domain.token.repository.projection;
 
 /**
  * 일별 토큰 사용량 집계 쿼리 결과 프로젝션.
- * {@code findLast30Days} native query의 결과 행에 매핑된다.
+ * {@code findDailyTotalsBetween} native query의 결과 행에 매핑된다.
  */
 public interface DailyUsageRow {
 
