@@ -1,4 +1,4 @@
-package com.tokenphage.api.feature.badge.svg.theme;
+package com.tokenphage.api.feature.badge.svg.theme.card.claude;
 
 import com.tokenphage.api.feature.badge.dto.response.BadgeResponse;
 import com.tokenphage.api.feature.badge.dto.response.DailyCountResponse;
@@ -12,19 +12,19 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class ClaudeBadgeThemeTest {
+class CardClaudeBadgeThemeTest {
 
-    private final ClaudeBadgeTheme theme = new ClaudeBadgeTheme();
+    private final CardClaudeBadgeTheme theme = new CardClaudeBadgeTheme();
 
     private BadgeResponse dataWith(long totalTokens) {
-        List<DailyCountResponse> heatbar = new ArrayList<>();
+        List<DailyCountResponse> daily30d = new ArrayList<>();
         for (int i = 0; i < 30; i++) {
-            heatbar.add(new DailyCountResponse("2026-05-" + (i + 1), i == 29 ? 19000 : 1000));
+            daily30d.add(new DailyCountResponse("2026-05-" + (i + 1), i == 29 ? 19000 : 1000));
         }
         List<ModelCountResponse> models = List.of(
             new ModelCountResponse("claude-sonnet-4-6", 1_200_000),
             new ModelCountResponse("claude-opus-4-7", 450_000));
-        return new BadgeResponse("leeyoungseok", totalTokens, heatbar, models, 0.87);
+        return new BadgeResponse("leeyoungseok", totalTokens, daily30d, models, 0.87, 0L, 0, List.of());
     }
 
     private static int count(String text, String token) {

@@ -1,12 +1,12 @@
-package com.tokenphage.api.feature.badge.svg.theme;
+package com.tokenphage.api.feature.badge.svg.theme.card.claude;
 
 import com.tokenphage.api.feature.badge.dto.response.BadgeResponse;
-import com.tokenphage.api.feature.badge.svg.BadgeColors;
-import com.tokenphage.api.feature.badge.svg.BaseBadgeTheme;
+import com.tokenphage.api.feature.badge.svg.theme.card.CardColors;
+import com.tokenphage.api.feature.badge.svg.theme.card.CardBadgeTheme;
 import org.springframework.stereotype.Component;
 
 @Component
-public class ClaudeBadgeTheme extends BaseBadgeTheme {
+public class CardClaudeBadgeTheme extends CardBadgeTheme {
 
     // 누적 토큰 숫자 그라데이션 stop (모든 레벨·모드 공통)
     private static final String GRAD_STOPS =
@@ -41,11 +41,11 @@ public class ClaudeBadgeTheme extends BaseBadgeTheme {
      */
     @Override
     protected String mascot(BadgeResponse data, boolean isDark) {
-        int level = ClaudeMascot.levelFor(data.totalTokens());
-        long recentDayTokens = data.heatbar().isEmpty()
+        int level = CardClaudeMascot.levelFor(data.totalTokens());
+        long recentDayTokens = data.daily30d().isEmpty()
                 ? 0L
-                : data.heatbar().getLast().total();
-        return ClaudeMascot.render(level, recentDayTokens, isDark);
+                : data.daily30d().getLast().total();
+        return CardClaudeMascot.render(level, recentDayTokens, isDark);
     }
 
     /**
@@ -57,7 +57,7 @@ public class ClaudeBadgeTheme extends BaseBadgeTheme {
      */
     @Override
     protected String subCaption(BadgeResponse data) {
-        int level = ClaudeMascot.levelFor(data.totalTokens());
+        int level = CardClaudeMascot.levelFor(data.totalTokens());
         return TokenBookScale.describe(level, data.totalTokens());
     }
 
@@ -85,7 +85,7 @@ public class ClaudeBadgeTheme extends BaseBadgeTheme {
      * @Since 2026-05-31
      */
     @Override
-    protected String tokenFill(BadgeResponse data, boolean isDark, BadgeColors modeColor) {
+    protected String tokenFill(BadgeResponse data, boolean isDark, CardColors modeColor) {
         return "url(#%s)".formatted(gradientId(data, isDark));
     }
 
@@ -100,7 +100,7 @@ public class ClaudeBadgeTheme extends BaseBadgeTheme {
      * @Since 2026-05-31
      */
     @Override
-    protected String heatColor(long val, long max, boolean isDark, BadgeColors modeColor) {
+    protected String heatColor(long val, long max, boolean isDark, CardColors modeColor) {
         String[] palette = isDark ? HEAT_DARK : HEAT_LIGHT;
         if (max == 0 || val == 0) {
             return palette[0];
@@ -122,7 +122,7 @@ public class ClaudeBadgeTheme extends BaseBadgeTheme {
     }
 
     private String gradientId(BadgeResponse data, boolean isDark) {
-        int level = ClaudeMascot.levelFor(data.totalTokens());
+        int level = CardClaudeMascot.levelFor(data.totalTokens());
         return "totalGrad-" + (isDark ? "dark" : "light") + "-" + level;
     }
 }

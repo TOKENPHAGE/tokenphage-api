@@ -1,11 +1,16 @@
-package com.tokenphage.api.feature.badge.svg;
+package com.tokenphage.api.feature.badge.svg.theme.card;
 
 import com.tokenphage.api.feature.badge.dto.response.BadgeResponse;
 import com.tokenphage.api.feature.badge.dto.response.DailyCountResponse;
 import com.tokenphage.api.feature.badge.dto.response.ModelCountResponse;
+import com.tokenphage.api.feature.badge.svg.BadgeDataNeed;
+import com.tokenphage.api.feature.badge.svg.BadgeTheme;
+import com.tokenphage.api.feature.badge.svg.SvgText;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * 마스코트를 제외한 공통 배지 레이아웃(배경·유저명·캐시 적중률·누적 토큰·히트바·Top5 모델)을 담당하는 추상 테마.
@@ -14,7 +19,24 @@ import java.util.List;
  * 유저명 아래 보조 캡션은 {@link #subCaption} 훅으로 노출하며 기본은 미표시다.
  */
 @Slf4j
-public abstract class BaseBadgeTheme implements BadgeTheme {
+public abstract class CardBadgeTheme implements BadgeTheme {
+
+    /**
+     * 통계 카드 패밀리(gpu·claude)가 렌더링에 쓰는 데이터를 선언한다.
+     * <p>
+     * 카드 레이아웃 변형은 이 선언을 공유한다. (BadgeTheme.needs()는 기본 구현이 없어 반드시 선언해야 한다.)
+     *
+     * @return 누적 토큰 · 30일 일별 · Top5 모델 · 캐시 적중률
+     * @Since 2026-07-16
+     */
+    @Override
+    public Set<BadgeDataNeed> needs() {
+        return EnumSet.of(
+                BadgeDataNeed.TOTAL_TOKENS,     // 총 토큰 사용량
+                BadgeDataNeed.DAILY_30D,        // 30일 토큰 사용량
+                BadgeDataNeed.TOP_MODELS,       // TOP5 모델 별 사용량
+                BadgeDataNeed.CACHE_HIT_RATE);  // 프롬프트 캐싱 Hit 비율
+    }
 
     /**
      * 공통 레이아웃에 테마별 마스코트를 끼워 완성된 배지 SVG를 생성한다.
@@ -27,14 +49,19 @@ public abstract class BaseBadgeTheme implements BadgeTheme {
     @Override
     public final String build(BadgeResponse data, boolean isDark) {
 
-        BadgeColors modeColor = isDark ? BadgeColors.DARK : BadgeColors.LIGHT;
+        CardColors modeColor = isDark ? CardColors.DARK : CardColors.LIGHT;
         log.debug("Building badge: user={}, theme={}, isDark={}", data.username(), name(), isDark);
 
         StringBuilder sb = new StringBuilder();
         sb.append("""
-            <svg xmlns="http://www.w3.org/2000/svg" width="540" height="210"
-                 viewBox="0 0 540 210" role="img" aria-label="TokenBadge %s">
-            """.formatted(escape(data.username())));
+            <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+                 width="540" height="210" viewBox="0 0 540 210" role="img" aria-label="TokenBadge %s">
+            """.formatted(SvgText.escape(data.username())));
+
+        // 뱃지 전체를 프로젝트 저장소 링크로 감싼다. 배경 rect가 전면을 덮어 뱃지 어디를 눌러도 이동한다.
+        sb.append("""
+            <a href="%s" xlink:href="%s">
+            """.formatted(SvgText.LINK_URL, SvgText.LINK_URL));
 
         appendBackground(sb, isDark, modeColor);
         sb.append(extraDefs(data, isDark));
@@ -43,14 +70,14 @@ public abstract class BaseBadgeTheme implements BadgeTheme {
         sb.append("""
             <text x="102" y="44" font-family="Pretendard,system-ui,sans-serif"
                   font-size="16" fill="%s" font-weight="700">@%s</text>
-            """.formatted(modeColor.textPrimary(), escape(data.username())));
+            """.formatted(modeColor.textPrimary(), SvgText.escape(data.username())));
 
         String caption = subCaption(data);
         if (!caption.isBlank()) {
             sb.append("""
                 <text x="102" y="62" font-family="Pretendard,system-ui,sans-serif"
                       font-size="10" fill="%s" font-weight="500">%s</text>
-                """.formatted(modeColor.textSecondary(), escape(caption)));
+                """.formatted(modeColor.textSecondary(), SvgText.escape(caption)));
         }
 
         appendCacheHitRate(sb, data.cacheHitRate(), isDark, modeColor);
@@ -62,7 +89,7 @@ public abstract class BaseBadgeTheme implements BadgeTheme {
         appendTokenSection(sb, data, isDark, modeColor);
 
         sb.append("<g transform=\"translate(30, 164)\">");
-        sb.append(buildHeatbar(data.heatbar(), isDark, modeColor));
+        sb.append(buildHeatbar(data.daily30d(), isDark, modeColor));
         sb.append("</g>");
 
         sb.append("""
@@ -71,6 +98,7 @@ public abstract class BaseBadgeTheme implements BadgeTheme {
 
         appendTopModels(sb, data.topModels(), modeColor);
 
+        sb.append("</a>");
         sb.append("</svg>");
         return sb.toString();
     }
@@ -117,11 +145,11 @@ public abstract class BaseBadgeTheme implements BadgeTheme {
      * @return fill 속성 값 (색상 또는 url(#id))
      * @Since 2026-05-31
      */
-    protected String tokenFill(BadgeResponse data, boolean isDark, BadgeColors modeColor) {
+    protected String tokenFill(BadgeResponse data, boolean isDark, CardColors modeColor) {
         return modeColor.textPrimary();
     }
 
-    private void appendBackground(StringBuilder sb, boolean isDark, BadgeColors modeColor) {
+    private void appendBackground(StringBuilder sb, boolean isDark, CardColors modeColor) {
         if (isDark) {
             sb.append("""
                 <rect width="540" height="210" fill="%s" rx="12"/>
@@ -134,7 +162,7 @@ public abstract class BaseBadgeTheme implements BadgeTheme {
         }
     }
 
-    private void appendCacheHitRate(StringBuilder sb, double cacheHitRate, boolean isDark, BadgeColors modeColor) {
+    private void appendCacheHitRate(StringBuilder sb, double cacheHitRate, boolean isDark, CardColors modeColor) {
         String cacheColor = cacheColor(cacheHitRate, isDark);
         sb.append("""
             <text x="515" y="38" font-family="Pretendard,system-ui,sans-serif"
@@ -146,8 +174,8 @@ public abstract class BaseBadgeTheme implements BadgeTheme {
             """.formatted(modeColor.textSecondary(), cacheColor, formatPercent(cacheHitRate)));
     }
 
-    private void appendTokenSection(StringBuilder sb, BadgeResponse data, boolean isDark, BadgeColors modeColor) {
-        String total = SvgBuilder.formatTokens(data.totalTokens());
+    private void appendTokenSection(StringBuilder sb, BadgeResponse data, boolean isDark, CardColors modeColor) {
+        String total = SvgText.formatTokens(data.totalTokens());
         sb.append("""
             <text x="30" y="100" font-family="Pretendard,system-ui,sans-serif"
                   font-size="11" fill="%s" font-weight="500" letter-spacing="0.6">TOKEN 누적</text>
@@ -165,7 +193,7 @@ public abstract class BaseBadgeTheme implements BadgeTheme {
                 modeColor.textSecondary()));
     }
 
-    private void appendTopModels(StringBuilder sb, List<ModelCountResponse> models, BadgeColors modeColor) {
+    private void appendTopModels(StringBuilder sb, List<ModelCountResponse> models, CardColors modeColor) {
         sb.append("""
             <text x="300" y="100" font-family="Pretendard,system-ui,sans-serif"
                   font-size="11" fill="%s" font-weight="500" letter-spacing="0.6">Top 5 Models</text>
@@ -190,8 +218,8 @@ public abstract class BaseBadgeTheme implements BadgeTheme {
                           font-size="12" fill="%s" font-weight="500">%s</text>
                     <text x="520" y="%d" font-family="Pretendard,system-ui,sans-serif"
                           font-size="12" fill="%s" font-weight="%s" text-anchor="end">%s</text>
-                    """.formatted(y, nameColor, escape(shortModel(m.model())),
-                                  y, nameColor, valWeight, SvgBuilder.formatTokens(m.total())));
+                    """.formatted(y, nameColor, SvgText.escape(shortModel(m.model())),
+                                  y, nameColor, valWeight, SvgText.formatTokens(m.total())));
             } else {
                 sb.append("""
                     <text x="321" y="%d" font-family="Pretendard,system-ui,sans-serif"
@@ -203,16 +231,16 @@ public abstract class BaseBadgeTheme implements BadgeTheme {
         }
     }
 
-    private String buildHeatbar(List<DailyCountResponse> heatbar, boolean isDark, BadgeColors modeColor) {
+    private String buildHeatbar(List<DailyCountResponse> daily30d, boolean isDark, CardColors modeColor) {
         // 데이터가 30일보다 적어도 항상 막대 30개를 그린다(없는 날은 최소 높이).
-        int days = Math.max(heatbar.size(), 30);
-        long max = heatbar.stream().mapToLong(DailyCountResponse::total).max().orElse(1);
+        int days = Math.max(daily30d.size(), 30);
+        long max = daily30d.stream().mapToLong(DailyCountResponse::total).max().orElse(1);
         int maxBarH = 30;
         StringBuilder sb = new StringBuilder();
         sb.append("<line x1=\"0\" y1=\"%d\" x2=\"239\" y2=\"%d\" stroke=\"%s\" stroke-width=\"0.5\" opacity=\"0.4\"/>"
             .formatted(maxBarH, maxBarH, modeColor.divider()));
         for (int i = 0; i < days; i++) {
-            long val = i < heatbar.size() ? heatbar.get(i).total() : 0;
+            long val = i < daily30d.size() ? daily30d.get(i).total() : 0;
             int bh = val == 0 ? 1 : Math.max(3, (int) Math.round((double) val / max * maxBarH));
             String fill = heatColor(val, max, isDark, modeColor);
             sb.append("<rect x=\"%d\" y=\"%d\" width=\"7\" height=\"%d\" fill=\"%s\" rx=\"2\"/>"
@@ -231,7 +259,7 @@ public abstract class BaseBadgeTheme implements BadgeTheme {
      * @return 막대 fill 색
      * @Since 2026-05-31
      */
-    protected String heatColor(long val, long max, boolean isDark, BadgeColors modeColor) {
+    protected String heatColor(long val, long max, boolean isDark, CardColors modeColor) {
         if (max == 0 || val == 0) {
             return modeColor.heatLow();
         }
@@ -262,9 +290,5 @@ public abstract class BaseBadgeTheme implements BadgeTheme {
             return isDark ? "#fbbf24" : "#d97706";
         }
         return isDark ? "#94a3b8" : "#6b7280";
-    }
-
-    private String escape(String s) {
-        return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
     }
 }

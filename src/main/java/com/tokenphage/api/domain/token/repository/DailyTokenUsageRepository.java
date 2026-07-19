@@ -56,15 +56,26 @@ public interface DailyTokenUsageRepository extends JpaRepository<DailyTokenUsage
     @Query("SELECT SUM(d.inputTok + d.outputTok) FROM DailyTokenUsage d WHERE d.githubId = :githubId")
     Long sumTotalTokens(@Param("githubId") Long githubId);
 
+    /**
+     * 사용자의 [from, to] 기간 일별 토큰 합계(input+output)를 날짜 오름차순으로 조회한다.
+     * <p>
+     * 창 길이는 호출자가 정한다(예: 30일 히트바, 365일 잔디). 사용 이력이 있는 날짜만 반환한다.
+     *
+     * @param githubId 대상 사용자 (null 불허)
+     * @param from     조회 시작일(포함, null 불허)
+     * @param to       조회 종료일(포함, null 불허)
+     * @return 날짜(yyyy-MM-dd 문자열)·총합 프로젝션 목록 (오름차순)
+     * @Since 2026-07-15
+     */
     @Query(value = """
         SELECT usage_date::text AS date, SUM(input_tok + output_tok) AS total
         FROM daily_token_usage
         WHERE github_id = :githubId AND usage_date BETWEEN :from AND :to
         GROUP BY usage_date ORDER BY usage_date
         """, nativeQuery = true)
-    List<DailyUsageRow> findLast30Days(@Param("githubId") Long githubId,
-                                       @Param("from") LocalDate from,
-                                       @Param("to") LocalDate to);
+    List<DailyUsageRow> findDailyTotalsBetween(@Param("githubId") Long githubId,
+                                               @Param("from") LocalDate from,
+                                               @Param("to") LocalDate to);
 
     @Query(value = """
         SELECT model, SUM(input_tok + output_tok) AS total

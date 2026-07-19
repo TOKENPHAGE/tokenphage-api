@@ -50,3 +50,6 @@ Thumbs.db
 ### 마스코트/배지 리포트 추출용 일회성 유틸 테스트 — 레포에 포함하지 않고 로컬 재생성용으로만 둔다 ###
 src/test/java/com/tokenphage/api/feature/badge/svg/theme/MascotExportTest.java
 src/test/java/com/tokenphage/api/feature/badge/svg/GpuBadgeLevelsReportTest.java
+
+### 마스코트 export 산출물 — ExportTest가 로컬 재생성. 레포엔 두지 않고 tokenphage-assets로 배포한다 ###
+assets/

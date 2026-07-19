@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -42,21 +43,18 @@ public class SvgBuilder {
     }
 
     /**
-     * 토큰 수를 읽기 쉬운 단위 문자열로 변환한다.
+     * theme이 요구하는 데이터 종류 집합을 반환한다.
      * <p>
-     * 1K / 1M / 1B 단위로 표시하며 소수점 첫째 자리를 유지한다. (예: 1500 → "1.5K")
+     * {@link #normalizeTheme}로 정규화한 뒤 해당 테마의 {@link BadgeTheme#needs()}를 반환하므로,
+     * 미등록 theme은 기본 테마("gpu")의 needs로 폴백한다(캐시 키·렌더 정규화 경로와 동일).
      *
-     * @param tokens 변환할 토큰 수
-     * @return 단위 변환된 문자열
-     * @Since 2026-05-24
+     * @param theme 원본 theme 파라미터 (null 허용)
+     * @return 해당 테마가 요구하는 데이터 종류 집합
+     * @Since 2026-07-15
      */
-    public static String formatTokens(long tokens) {
-        return switch (Long.valueOf(tokens)) {
-            case Long l when l >= 1_000_000_000L -> String.format("%.1fB", l / 1_000_000_000.0);
-            case Long l when l >= 1_000_000L -> String.format("%.1fM", l / 1_000_000.0);
-            case Long l when l >= 1_000L -> String.format("%.1fK", l / 1_000.0);
-            default -> String.valueOf(tokens);
-        };
+    public Set<BadgeDataNeed> needsOf(String theme) {
+        BadgeTheme selected = themes.get(normalizeTheme(theme));
+        return selected.needs();
     }
 
     /**
