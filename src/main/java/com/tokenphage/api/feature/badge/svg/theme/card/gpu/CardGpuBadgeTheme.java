@@ -1,15 +1,15 @@
-package com.tokenphage.api.feature.badge.svg.theme;
+package com.tokenphage.api.feature.badge.svg.theme.card.gpu;
 
 import com.tokenphage.api.feature.badge.dto.response.BadgeResponse;
-import com.tokenphage.api.feature.badge.svg.BadgeColors;
-import com.tokenphage.api.feature.badge.svg.BaseBadgeTheme;
+import com.tokenphage.api.feature.badge.svg.theme.card.CardColors;
+import com.tokenphage.api.feature.badge.svg.theme.card.CardBadgeTheme;
 import org.springframework.stereotype.Component;
 
 @Component
-public class GpuBadgeTheme extends BaseBadgeTheme {
+public class CardGpuBadgeTheme extends CardBadgeTheme {
 
-    // 누적 토큰 숫자 그라데이션 stop (모든 레벨·모드 공통).
-    // 30일 히트바(BadgeColors 기본 블루 heat 팔레트)와 통일한 블루 톤.
+    // 누적 토큰 숫자 그라데이션 (모든 레벨·모드 공통).
+    // 30일 히트바(CardColors 기본 블루 heat 팔레트)와 통일한 블루 톤.
     private static final String GRAD_STOPS =
             "<stop offset=\"0%\" stop-color=\"#60a5fa\"/>"
                     + "<stop offset=\"45%\" stop-color=\"#3b82f6\"/>"
@@ -36,8 +36,8 @@ public class GpuBadgeTheme extends BaseBadgeTheme {
      */
     @Override
     protected String mascot(BadgeResponse data, boolean isDark) {
-        int level = GpuMascot.levelFor(data.totalTokens());
-        return GpuMascot.render(level, isDark);
+        int level = CardGpuMascot.levelFor(data.totalTokens());
+        return CardGpuMascot.render(level, isDark);
     }
 
     /**
@@ -64,7 +64,7 @@ public class GpuBadgeTheme extends BaseBadgeTheme {
      * @Since 2026-06-17
      */
     @Override
-    protected String tokenFill(BadgeResponse data, boolean isDark, BadgeColors modeColor) {
+    protected String tokenFill(BadgeResponse data, boolean isDark, CardColors modeColor) {
         return "url(#%s)".formatted(gradientId(isDark));
     }
 

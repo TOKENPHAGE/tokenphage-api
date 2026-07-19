@@ -1,18 +1,18 @@
-package com.tokenphage.api.feature.badge.svg.theme;
+package com.tokenphage.api.feature.badge.svg.theme.card.gpu;
 
 /**
  * GPU 마스코트를 활동 레벨(1~5)에 따라 분기 생성한다. ("과열되는 GPU" 컨셉)
  * <p>
  * 레벨이 올라갈수록 코어(팬) 회전이 빨라지고, 과열 글로우가 강해지며, 칩 색이 녹색→황록→주황→빨강으로 변하고,
  * 상단 열파 입자가 늘어난다. 최고 레벨대(Lv4~5)에서는 전기 스파크(픽셀 번개)가 가끔 번쩍인다.
- * {@link ClaudeMascot}과 동일한 levelFor + LEVELS + render 패턴을 따른다.
+ * CardClaudeMascot과 동일한 levelFor + LEVELS + render 패턴을 따른다.
  */
-final class GpuMascot {
+final class CardGpuMascot {
 
-    private GpuMascot() {
+    private CardGpuMascot() {
     }
 
-    // 누적 토큰 → 레벨 임계값 (ClaudeMascot과 동일)
+    // 누적 토큰 → 레벨 임계값 (CardClaudeMascot과 동일)
     private static final long LV2_MIN = 10_000_000L;    // 10M
     private static final long LV3_MIN = 100_000_000L;   // 100M
     private static final long LV4_MIN = 500_000_000L;   // 500M
@@ -189,7 +189,7 @@ final class GpuMascot {
                 .replace("@LED@", lv.ledDur());
     }
 
-    // 과열 글로우 필터 (ClaudeMascot.glowFilter 미러)
+    // 과열 글로우 필터 (CardClaudeMascot.glowFilter 미러)
     private static String glowFilter(String id, GpuLevel lv) {
         return """
                 <filter id="%s" x="-60%%" y="-60%%" width="220%%" height="220%%">
