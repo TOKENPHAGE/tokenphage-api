@@ -94,12 +94,12 @@ tokenphage
 [![Tokenphage](https://api.tokenphage.com/badge/<username>?theme=claude&mode=dark)](https://github.com/TOKENPHAGE/tokenphage-api)
 ```
 
-| 파라미터    | 값                | 기본값     | 설명                      |
-|---------|------------------|---------|-------------------------|
-| `theme` | `gpu` · `claude` | `gpu`   | 배지 스킨 (마스코트·색 팔레트가 달라짐) |
-| `mode`  | `light` · `dark` | `light` | 색상 모드                   |
+| 파라미터    | 값                                  | 기본값     | 설명                          |
+|---------|------------------------------------|---------|-----------------------------|
+| `theme` | `gpu` · `claude` · `grass-claude`  | `gpu`   | 배지 스킨 (마스코트·레이아웃·색 팔레트가 달라짐) |
+| `mode`  | `light` · `dark`                   | `light` | 색상 모드                       |
 
-> 🚀 현재 테마는 **2종(`gpu` · `claude`)** 입니다. 앞으로 더 다양한 테마를 계속 추가 릴리즈할 예정이에요 — 다음 업데이트를 기대해 주세요!
+> 🚀 현재 테마는 **3종(`gpu` · `claude` · `grass-claude`)** 입니다. 앞으로 더 다양한 테마를 계속 추가 릴리즈할 예정이에요 — 다음 업데이트를 기대해 주세요!
 
 #### 🖥️ GPU 테마 (기본)
 
@@ -142,6 +142,18 @@ tokenphage
 <td align="center"><b>Lv.5</b><br/><sub><code>&ge; 1B</code></sub></td>
 </tr>
 </table>
+
+#### 🌱 Grass 테마
+
+클로드 마스코트가 **하늘 놀이터**를 걸어 다니는 잔디 스타일 배지. 카드형과 달리 잔디 그리드를 넓게 펼칩니다.
+
+<a href="https://github.com/TOKENPHAGE/tokenphage-api"><img src="https://api.tokenphage.com/badge/kobenlys?theme=grass-claude" alt="TokenPhage grass-claude light 배지"></a>
+
+`?theme=grass-claude`
+
+<a href="https://github.com/TOKENPHAGE/tokenphage-api"><img src="https://api.tokenphage.com/badge/kobenlys?theme=grass-claude&amp;mode=dark" alt="TokenPhage grass-claude dark 배지"></a>
+
+`?theme=grass-claude&mode=dark`
 
 #### 🌗 색상 모드
 
