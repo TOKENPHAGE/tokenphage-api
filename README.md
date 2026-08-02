@@ -16,7 +16,7 @@
 
 ## 👾 TokenPhage란?
 
-GitHub 잔디가 당신의 커밋을 보여주듯, **TokenPhage**는 Claude Code·Codex로 태운 토큰을 **당신의 AI 활용 스탯**으로 보여줍니다.
+GitHub 잔디가 당신의 커밋을 보여주듯, **TokenPhage**는 Claude Code·Codex·opencode로 태운 토큰을 **당신의 AI 활용 스탯**으로 보여줍니다.
 
 누적 토큰·모델별 집계·30일 히트맵을 배지 한 장에 담고, 토큰을 쌓을수록 **마스코트가 Lv.1 → Lv.5로 진화**합니다. README에 **한 줄** 붙이면 끝 — 그다음은 매일 자동으로 갱신됩니다.
 
