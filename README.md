@@ -16,7 +16,7 @@
 
 ## 👾 TokenPhage란?
 
-GitHub 잔디가 당신의 커밋을 보여주듯, **TokenPhage**는 Claude Code·Codex로 태운 토큰을 **당신의 AI 활용 스탯**으로 보여줍니다.
+GitHub 잔디가 당신의 커밋을 보여주듯, **TokenPhage**는 Claude Code·Codex·opencode로 태운 토큰을 **당신의 AI 활용 스탯**으로 보여줍니다.
 
 누적 토큰·모델별 집계·30일 히트맵을 배지 한 장에 담고, 토큰을 쌓을수록 **마스코트가 Lv.1 → Lv.5로 진화**합니다. README에 **한 줄** 붙이면 끝 — 그다음은 매일 자동으로 갱신됩니다.
 
@@ -29,11 +29,11 @@ GitHub 잔디가 당신의 커밋을 보여주듯, **TokenPhage**는 Claude Code
   </tr>
   <tr>
     <td align="center">
-      <a href="https://github.com/TOKENPHAGE/tokenphage-api"><img src="https://api.tokenphage.com/badge/kobenlys?theme=gpu&amp;mode=dark" alt="TokenPhage gpu dark 배지"></a><br/>
+      <a href="https://github.com/TOKENPHAGE"><img src="https://api.tokenphage.com/badge/kobenlys?theme=gpu&amp;mode=dark" alt="TokenPhage gpu dark 배지"></a><br/>
       <code>https://api.tokenphage.com/badge/kobenlys?theme=gpu&amp;mode=dark</code>
     </td>
     <td align="center">
-      <a href="https://github.com/TOKENPHAGE/tokenphage-api"><img src="https://api.tokenphage.com/badge/kobenlys?theme=claude&amp;mode=light" alt="TokenPhage claude light 배지"></a><br/>
+      <a href="https://github.com/TOKENPHAGE"><img src="https://api.tokenphage.com/badge/kobenlys?theme=claude&amp;mode=light" alt="TokenPhage claude light 배지"></a><br/>
       <code>https://api.tokenphage.com/badge/kobenlys?theme=claude&amp;mode=light</code>
     </td>
   </tr>
@@ -77,7 +77,7 @@ tokenphage
 **3️⃣ 배지 붙이기** — GitHub 프로필이나 레포 README에 한 줄:
 
 ```markdown
-[![Tokenphage](https://api.tokenphage.com/badge/<your-github-username>)](https://github.com/TOKENPHAGE/tokenphage-api)
+[![Tokenphage](https://api.tokenphage.com/badge/<your-github-username>)](https://github.com/TOKENPHAGE)
 ```
 
 로그인 후에는 같은 화면에서 **지금 동기화 · 매일 04:00 자동 동기화 켜기/끄기 · 데이터 초기화(Reset)** 를 모두 다룰 수 있어요.
@@ -91,7 +91,7 @@ tokenphage
 배지는 쿼리 파라미터로 외형(테마·색상 모드)을 바꿀 수 있고, 어떤 테마든 **누적 토큰이 쌓일수록 마스코트가 Lv.1 → Lv.5로 진화**합니다.
 
 ```markdown
-[![Tokenphage](https://api.tokenphage.com/badge/<username>?theme=claude&mode=dark)](https://github.com/TOKENPHAGE/tokenphage-api)
+[![Tokenphage](https://api.tokenphage.com/badge/<username>?theme=claude&mode=dark)](https://github.com/TOKENPHAGE)
 ```
 
 | 파라미터    | 값                                  | 기본값     | 설명                          |
@@ -147,11 +147,11 @@ tokenphage
 
 클로드 마스코트가 **하늘 놀이터**를 걸어 다니는 잔디 스타일 배지. 카드형과 달리 잔디 그리드를 넓게 펼칩니다.
 
-<a href="https://github.com/TOKENPHAGE/tokenphage-api"><img src="https://api.tokenphage.com/badge/kobenlys?theme=grass-claude" alt="TokenPhage grass-claude light 배지"></a>
+<a href="https://github.com/TOKENPHAGE"><img src="https://api.tokenphage.com/badge/kobenlys?theme=grass-claude" alt="TokenPhage grass-claude light 배지"></a>
 
 `?theme=grass-claude`
 
-<a href="https://github.com/TOKENPHAGE/tokenphage-api"><img src="https://api.tokenphage.com/badge/kobenlys?theme=grass-claude&amp;mode=dark" alt="TokenPhage grass-claude dark 배지"></a>
+<a href="https://github.com/TOKENPHAGE"><img src="https://api.tokenphage.com/badge/kobenlys?theme=grass-claude&amp;mode=dark" alt="TokenPhage grass-claude dark 배지"></a>
 
 `?theme=grass-claude&mode=dark`
 
