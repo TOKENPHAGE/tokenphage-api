@@ -10,7 +10,7 @@
     </parent>
     <groupId>com.tokenphage</groupId>
     <artifactId>tokenphage-api</artifactId>
-    <version>26.07.19</version>
+    <version>26.08.12</version>
     <name>tokenphage-api</name>
     <description/>
     <url/>
@@ -89,6 +89,13 @@
         <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <!-- Spring Boot 4.0 모듈화로 @WebMvcTest/MockMvc 슬라이스가 이 모듈로 분리됨
+                 (구 org.springframework.boot.test.autoconfigure.web.servlet) -->
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webmvc-test</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
