@@ -1,4 +1,5 @@
 package com.tokenphage.api.feature.audit.aspect;
+import com.tokenphage.api.audit.AuditOutcome;
 import com.tokenphage.api.feature.audit.dto.RequestAuditCommand;
 import com.tokenphage.api.feature.audit.service.RequestAuditService;
 
@@ -91,6 +92,94 @@ class RequestAuditAspectTest {
         assertThat(command.clientIp()).isEqualTo("203.0.113.7");
         assertThat(command.userAgent()).isEqualTo("tokenphage-cli/1.0");
         assertThat(command.outcome()).isEqualTo("success");
+    }
+
+    @Test
+    @DisplayName("캡처_컨트롤러가결과지정_그값을outcome에기록")
+    void 캡처_컨트롤러가결과지정_그값을outcome에기록() throws Throwable {
+        // given
+        // 200으로 응답하지만 도메인상 거부인 경우(자격 없는 배지)를 구분하기 위한 통로다.
+        currentRequest().setAttribute(AuditOutcome.ATTRIBUTE_KEY, AuditOutcome.BADGE_GRANT_DENIED);
+        when(joinPoint.proceed()).thenReturn(ResponseEntity.ok().build());
+
+        // when
+        aspect.audit(joinPoint);
+
+        // then
+        RequestAuditCommand command = captureRecorded();
+        assertThat(command.statusCode()).isEqualTo(200);
+        assertThat(command.outcome()).isEqualTo("badge_grant_denied");
+    }
+
+    @Test
+    @DisplayName("캡처_결과값이enum이아님_success로기록")
+    void 캡처_결과값이enum이아님_success로기록() throws Throwable {
+        // given
+        // AuditOutcome 타입만 받는다. 문자열을 심어도 무시하고 기본값으로 떨어져야 한다.
+        currentRequest().setAttribute(AuditOutcome.ATTRIBUTE_KEY, "badge_grant_denied");
+        when(joinPoint.proceed()).thenReturn(ResponseEntity.ok().build());
+
+        // when
+        aspect.audit(joinPoint);
+
+        // then
+        assertThat(captureRecorded().outcome()).isEqualTo("success");
+    }
+
+    @Test
+    @DisplayName("캡처_결과미지정_success로기록")
+    void 캡처_결과미지정_success로기록() throws Throwable {
+        // given
+        when(joinPoint.proceed()).thenReturn(ResponseEntity.ok().build());
+
+        // when
+        aspect.audit(joinPoint);
+
+        // then
+        assertThat(captureRecorded().outcome()).isEqualTo("success");
+    }
+
+    @Test
+    @DisplayName("캡처_쿼리스트링존재_경로에포함")
+    void 캡처_쿼리스트링존재_경로에포함() throws Throwable {
+        // given
+        // 어떤 theme으로 접근했는지 남기려면 쿼리스트링이 필요하다.
+        MockHttpServletRequest request = currentRequest();
+        request.setRequestURI("/badge/example-user");
+        request.setQueryString("theme=contributor&mode=dark");
+        when(joinPoint.proceed()).thenReturn(ResponseEntity.ok().build());
+
+        // when
+        aspect.audit(joinPoint);
+
+        // then
+        assertThat(captureRecorded().requestPath())
+                .isEqualTo("/badge/example-user?theme=contributor&mode=dark");
+    }
+
+    @Test
+    @DisplayName("캡처_경로가컬럼길이초과_255자로절단")
+    void 캡처_경로가컬럼길이초과_255자로절단() throws Throwable {
+        // given
+        // request_path는 VARCHAR(255)라 자르지 않으면 비동기 적재가 조용히 실패한다.
+        MockHttpServletRequest request = currentRequest();
+        request.setRequestURI("/badge/example-user");
+        request.setQueryString("theme=" + "x".repeat(400));
+        when(joinPoint.proceed()).thenReturn(ResponseEntity.ok().build());
+
+        // when
+        aspect.audit(joinPoint);
+
+        // then
+        assertThat(captureRecorded().requestPath()).hasSize(255);
+    }
+
+    /**
+     * 현재 스레드에 바인딩된 MockHttpServletRequest를 꺼낸다.
+     */
+    private MockHttpServletRequest currentRequest() {
+        ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        return (MockHttpServletRequest) attrs.getRequest();
     }
 
     @Test

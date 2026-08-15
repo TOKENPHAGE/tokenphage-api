@@ -1,5 +1,6 @@
 package com.tokenphage.api.feature.badge.svg.theme.grass.claude;
 
+import com.tokenphage.api.domain.badge.BadgeCode;
 import com.tokenphage.api.feature.badge.dto.response.BadgeResponse;
 import com.tokenphage.api.feature.badge.svg.theme.grass.GrassBadgeTheme;
 import org.springframework.stereotype.Component;
@@ -21,7 +22,7 @@ public class GrassClaudeBadgeTheme extends GrassBadgeTheme {
      */
     @Override
     public String name() {
-        return "grass-claude";
+        return BadgeCode.GRASS_CLAUDE.getCode();
     }
 
     /**

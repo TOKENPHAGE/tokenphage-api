@@ -1,5 +1,6 @@
 package com.tokenphage.api.feature.badge.svg.theme.card.gpu;
 
+import com.tokenphage.api.domain.badge.BadgeCode;
 import com.tokenphage.api.feature.badge.dto.response.BadgeResponse;
 import com.tokenphage.api.feature.badge.svg.theme.card.CardColors;
 import com.tokenphage.api.feature.badge.svg.theme.card.CardBadgeTheme;
@@ -23,7 +24,7 @@ public class CardGpuBadgeTheme extends CardBadgeTheme {
      */
     @Override
     public String name() {
-        return "gpu";
+        return BadgeCode.GPU.getCode();
     }
 
     /**
