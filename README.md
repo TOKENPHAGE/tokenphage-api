@@ -30,11 +30,11 @@ GitHub 잔디가 당신의 커밋을 보여주듯, **TokenPhage**는 Claude Code
   <tr>
     <td align="center">
       <a href="https://github.com/TOKENPHAGE"><img src="https://api.tokenphage.com/badge/kobenlys?theme=gpu&amp;mode=dark" alt="TokenPhage gpu dark 배지"></a><br/>
-      <code>https://api.tokenphage.com/badge/kobenlys?theme=gpu&amp;mode=dark</code>
+      <code>https://api.tokenphage.com/badge/&lt;your-github-name&gt;?theme=gpu&amp;mode=dark</code>
     </td>
     <td align="center">
       <a href="https://github.com/TOKENPHAGE"><img src="https://api.tokenphage.com/badge/kobenlys?theme=claude&amp;mode=light" alt="TokenPhage claude light 배지"></a><br/>
-      <code>https://api.tokenphage.com/badge/kobenlys?theme=claude&amp;mode=light</code>
+      <code>https://api.tokenphage.com/badge/&lt;your-github-name&gt;?theme=claude&amp;mode=light</code>
     </td>
   </tr>
 </table>
@@ -77,7 +77,7 @@ tokenphage
 **3️⃣ 배지 붙이기** — GitHub 프로필이나 레포 README에 한 줄:
 
 ```markdown
-[![Tokenphage](https://api.tokenphage.com/badge/<your-github-username>)](https://github.com/TOKENPHAGE)
+[![Tokenphage](https://api.tokenphage.com/badge/<your-github-name>)](https://github.com/TOKENPHAGE)
 ```
 
 로그인 후에는 같은 화면에서 **지금 동기화 · 매일 04:00 자동 동기화 켜기/끄기 · 데이터 초기화(Reset)** 를 모두 다룰 수 있어요.
@@ -91,7 +91,7 @@ tokenphage
 배지는 쿼리 파라미터로 외형(테마·색상 모드)을 바꿀 수 있고, 어떤 테마든 **누적 토큰이 쌓일수록 마스코트가 Lv.1 → Lv.5로 진화**합니다.
 
 ```markdown
-[![Tokenphage](https://api.tokenphage.com/badge/<username>?theme=claude&mode=dark)](https://github.com/TOKENPHAGE)
+[![Tokenphage](https://api.tokenphage.com/badge/<your-github-name>?theme=claude&mode=dark)](https://github.com/TOKENPHAGE)
 ```
 
 | 파라미터    | 값                                  | 기본값     | 설명                          |
