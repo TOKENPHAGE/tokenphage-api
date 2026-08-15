@@ -1,6 +1,6 @@
 package com.tokenphage.api.feature.sync;
 
-import com.tokenphage.api.domain.BadgeCacheInvalidator;
+import com.tokenphage.api.domain.badge.BadgeCacheInvalidator;
 import com.tokenphage.api.domain.token.repository.DailyTokenUsageRepository;
 import com.tokenphage.api.domain.token.repository.projection.ModelUsageRow;
 import com.tokenphage.api.domain.user.repository.UserRepository;
