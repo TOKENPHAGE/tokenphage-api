@@ -10,7 +10,7 @@
     </parent>
     <groupId>com.tokenphage</groupId>
     <artifactId>tokenphage-api</artifactId>
-    <version>26.07.19</version>
+    <version>26.08.12</version>
     <name>tokenphage-api</name>
     <description/>
     <url/>
@@ -92,6 +92,13 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <!-- Spring Boot 4.0 모듈화로 @WebMvcTest/MockMvc 슬라이스가 이 모듈로 분리됨
+                 (구 org.springframework.boot.test.autoconfigure.web.servlet) -->
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webmvc-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <!-- Spring Boot 4.0 모듈화로 TestRestTemplate/RestTestClient가 이 모듈로 분리됨
                  (구 org.springframework.boot.test.web.client → org.springframework.boot.resttestclient) -->
             <groupId>org.springframework.boot</groupId>
@@ -126,6 +133,33 @@
             <groupId>com.squareup.okhttp3</groupId>
             <artifactId>mockwebserver</artifactId>
             <version>4.12.0</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Testcontainers: 통합테스트(@Tag("integration"))에서 일회용 Postgres/Redis 컨테이너를 띄운다.
+             전부 test scope이므로 유닛 테스트 실행 경로와 프로덕션 jar에는 포함되지 않는다.
+             버전은 spring-boot-dependencies BOM이 관리한다 (testcontainers 2.0.5 / redis 모듈 2.2.4). -->
+        <dependency>
+            <!-- @ServiceConnection: 컨테이너의 host/port/계정을 Spring DataSource·Redis 설정에 자동 주입 -->
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-testcontainers</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers-junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <!-- PostgreSQLContainer -->
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers-postgresql</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <!-- RedisContainer -->
+            <groupId>com.redis</groupId>
+            <artifactId>testcontainers-redis</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

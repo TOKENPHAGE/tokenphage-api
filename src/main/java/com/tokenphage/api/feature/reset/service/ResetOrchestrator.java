@@ -1,6 +1,6 @@
 package com.tokenphage.api.feature.reset.service;
 
-import com.tokenphage.api.domain.BadgeCacheInvalidator;
+import com.tokenphage.api.domain.badge.BadgeCacheInvalidator;
 import com.tokenphage.api.exception.AppException;
 import com.tokenphage.api.feature.reset.exception.ResetErrorCode;
 import lombok.RequiredArgsConstructor;

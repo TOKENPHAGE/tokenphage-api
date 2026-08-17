@@ -1,6 +1,6 @@
 package com.tokenphage.api.feature.sync.service;
 
-import com.tokenphage.api.domain.BadgeCacheInvalidator;
+import com.tokenphage.api.domain.badge.BadgeCacheInvalidator;
 import com.tokenphage.api.domain.user.service.UserService;
 import com.tokenphage.api.feature.sync.dto.request.SyncRequest;
 import lombok.RequiredArgsConstructor;

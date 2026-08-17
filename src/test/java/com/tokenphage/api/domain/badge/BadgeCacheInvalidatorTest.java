@@ -1,4 +1,4 @@
-package com.tokenphage.api.domain;
+package com.tokenphage.api.domain.badge;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

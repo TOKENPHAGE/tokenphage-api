@@ -1,5 +1,6 @@
 package com.tokenphage.api.feature.badge.svg;
 
+import com.tokenphage.api.domain.badge.BadgeCode;
 import com.tokenphage.api.feature.badge.dto.response.BadgeResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -14,7 +15,7 @@ import java.util.stream.Collectors;
 @Component
 public class SvgBuilder {
 
-    private static final String DEFAULT_THEME = "gpu";
+    private static final String DEFAULT_THEME = BadgeCode.GPU.getCode();
     private static final String DARK_MODE = "dark";
     private static final String LIGHT_MODE = "light";
 
@@ -86,5 +87,19 @@ public class SvgBuilder {
      */
     public String normalizeMode(String mode) {
         return DARK_MODE.equalsIgnoreCase(mode) ? DARK_MODE : LIGHT_MODE;
+    }
+
+    /**
+     * mode 문자열이 다크 모드인지 판정한다.
+     * <p>
+     * BadgeTheme.build()는 boolean isDark를 받으므로, 디스패처를 거치지 않고 테마를 직접
+     * 호출하는 쪽(잠금 안내 렌더)이 같은 기준으로 변환할 수 있게 노출한다.
+     *
+     * @param mode 원본 또는 정규화된 mode 문자열 (null 허용)
+     * @return "dark"면 true, 그 외에는 false
+     * @Since 2026-08-10
+     */
+    public boolean isDark(String mode) {
+        return DARK_MODE.equalsIgnoreCase(mode);
     }
 }
