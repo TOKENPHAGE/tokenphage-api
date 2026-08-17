@@ -11,9 +11,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -355,33 +352,4 @@ class CardGpuBadgeThemeTest {
         }
     }
 
-    @Nested @DisplayName("SVG 파일 출력 (시각적 검증)")
-    class SvgFileOutput {
-
-        @Test @DisplayName("라이트/다크 SVG와 HTML 뷰어를 /tmp/tokenphage-test에 생성")
-        void writePreviewFiles() throws IOException {
-            BadgeResponse data = sampleData();
-            String lightSvg = gpuTheme.build(data, false);
-            String darkSvg  = gpuTheme.build(data, true);
-
-            Path outDir = Path.of("/tmp/tokenphage-test");
-            Files.createDirectories(outDir);
-
-            Path lightPath = outDir.resolve("badge-light.svg");
-            Path darkPath  = outDir.resolve("badge-dark.svg");
-            Files.writeString(lightPath, lightSvg);
-            Files.writeString(darkPath,  darkSvg);
-
-            String html = """
-                <!DOCTYPE html><html lang="ko"><head>
-                <meta charset="UTF-8"/><title>Tokenphage Badge Preview</title></head>
-                <body>%s%s</body></html>
-                """.formatted(lightSvg, darkSvg);
-            Files.writeString(outDir.resolve("preview.html"), html);
-
-            assertThat(lightPath).exists();
-            assertThat(darkPath).exists();
-            assertThat(outDir.resolve("preview.html")).exists();
-        }
-    }
 }
