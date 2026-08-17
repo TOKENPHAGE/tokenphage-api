@@ -1,4 +1,4 @@
-package com.tokenphage.api.domain;
+package com.tokenphage.api.domain.badge;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.Cursor;

@@ -1,7 +1,7 @@
 name: CI
 
 # 유닛 테스트 게이트 — push(main/develop)와 모든 PR에서 자동 실행한다.
-# pom.xml surefire가 @Tag("integration")을 제외하므로 유닛만 돌며 DB/Redis가 필요 없다.
+# pom.xml 설정이 test 단계에서 @Tag("integration")을 제외하므로 유닛만 돌며 DB/Redis가 필요 없다.
 on:
   push:
     branches: [main, develop]
@@ -33,7 +33,39 @@ jobs:
         if: always()            # 성공/실패와 무관하게 리포트 보존(실패 원인 파악)
         uses: actions/upload-artifact@v4
         with:
-          name: surefire-reports
+          name: unit-test-reports
+          # 경로는 플러그인이 리포트를 쓰는 실제 위치라 바꿀 수 없다.
           path: target/surefire-reports/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  # 통합 테스트 게이트 — verify 단계에서 @Tag("integration") 표시된 테스트만 실행된다.
+  # Testcontainers가 Postgres/Redis를 일회용 컨테이너로 띄우므로 services 선언이 필요 없다
+  # (ubuntu-latest 러너에 Docker가 기본 탑재). 실 DB 자격증명도 필요 없다.
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      # verify는 유닛 테스트도 함께 돌린다. 유닛은 수 초라 중복 비용이 무시할 만하고,
+      # 별도 스킵 플래그를 두면 pom에 관리 포인트가 생겨 그대로 둔다.
+      - name: Run integration tests
+        run: ./mvnw -B --no-transfer-progress verify
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-test-reports
+          # 경로는 플러그인이 리포트를 쓰는 실제 위치라 바꿀 수 없다.
+          path: target/failsafe-reports/
           if-no-files-found: ignore
           retention-days: 7

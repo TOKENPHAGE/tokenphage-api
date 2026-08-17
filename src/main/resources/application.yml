@@ -19,11 +19,16 @@ spring:
 badge:
   cache-ttl-minutes: 60
   timezone: ${BADGE_TIMEZONE:Asia/Seoul}
+  # 로컬/CI 폴백. application-dev.yml 은 gitignore 대상이라 클린 체크아웃에는 없다.
+  # HS256 최소 키 길이(32바이트)를 채워야 한다
+  jwt-secret: ${JWT_SECRET:local-and-ci-only-do-not-use-in-prod}
 
 auth:
   gist:
     api-base-url: ${GIST_API_BASE_URL:https://api.github.com}
     challenge-ttl-minutes: ${AUTH_CHALLENGE_TTL_MINUTES:10}
+    # 빈 값이면 GistVerificationConfig 가 Authorization 헤더를 생략하고 미인증으로 폴백한다
+    api-token: ${GIST_API_TOKEN:}
 
 server:
   port: ${PORT:8080}

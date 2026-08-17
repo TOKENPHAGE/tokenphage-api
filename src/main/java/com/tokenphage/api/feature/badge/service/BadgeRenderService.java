@@ -1,7 +1,11 @@
 package com.tokenphage.api.feature.badge.service;
 
+import com.tokenphage.api.domain.badge.service.BadgeGrantResult;
+import com.tokenphage.api.domain.badge.service.BadgeGrantService;
 import com.tokenphage.api.feature.badge.dto.response.BadgeResponse;
+import com.tokenphage.api.feature.badge.dto.response.BadgeSvgResponse;
 import com.tokenphage.api.feature.badge.svg.SvgBuilder;
+import com.tokenphage.api.feature.badge.svg.theme.locked.LockedBadgeTheme;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,6 +22,8 @@ public class BadgeRenderService {
     private final BadgeQueryService queryService;
     private final SvgBuilder svgBuilder;
     private final StringRedisTemplate redis;
+    private final BadgeGrantService badgeGrantService;
+    private final LockedBadgeTheme lockedBadgeTheme;
 
     @Value("${badge.cache-ttl-minutes}")
     private int cacheTtlMinutes;
@@ -30,36 +36,51 @@ public class BadgeRenderService {
      * 캐시에 값이 있으면 즉시 반환하고, 없으면 DB에서 조회해 SVG를 생성한 뒤 캐시에 저장한다.
      * 캐시 TTL은 설정값 badge.cache-ttl-minutes를 따른다.
      *
+     * <p>
+     * 자격이 필요한 배지인데 배지 주인에게 자격이 없으면 잠금 안내 SVG를 대신 반환한다.
+     * 이때 잠금 SVG는 캐시에 저장하지 않으므로 자격을 부여하면 다음 요청에 즉시 반영된다.
+     *
      * @param username 배지를 조회할 GitHub 사용자명 (null 불허)
      * @param theme    배지 스킨 종류 (미등록 값은 기본 테마로 정규화)
      * @param mode     색상 모드 ("dark"가 아니면 "light"로 정규화)
-     * @return SVG 문자열
+     * @return SVG 문자열과 자격 판정 결과
      * @throws com.tokenphage.api.exception.AppException 사용자가 없을 경우 (BADGE_001)
      * @Since 2026-05-27
      */
-    public String getSvg(String username, String theme, String mode) {
+    public BadgeSvgResponse getSvg(String username, String theme, String mode) {
 
         String normalizedTheme = svgBuilder.normalizeTheme(theme);
         String normalizedMode = svgBuilder.normalizeMode(mode);
+
+        // #0. 자격 확인은 캐시 조회보다 먼저. 캐시-자격 불일치를 막고 회수가 즉시 반영된다.
+        //     잠금 SVG는 캐시하지 않으므로 부여도 즉시 반영된다.
+        BadgeGrantResult grant = badgeGrantService.resolveGrant(username, normalizedTheme);
+        if (!grant.granted()) {
+            log.info("Badge locked, rendering lock notice: username={}, theme={}", username, normalizedTheme);
+            String lockedSvg = lockedBadgeTheme.render(
+                    grant.title(), grant.message(), svgBuilder.isDark(normalizedMode));
+            return new BadgeSvgResponse(lockedSvg, false);
+        }
+
         String cacheKey = "badge:" + username + ":" + normalizedTheme + ":" + normalizedMode;
         String cached = redis.opsForValue().get(cacheKey);
 
-        // #0. 배지(SVG)가 캐싱되어 있으면 즉시 리턴
+        // #1. 배지(SVG)가 캐싱되어 있으면 즉시 리턴
         if (cached != null) {
             log.debug("Badge cache hit: [{}] key={}", username, cacheKey);
-            return cached;
+            return new BadgeSvgResponse(cached, true);
         }
 
         log.info("Badge cache miss, building SVG: username={}, theme={}, mode={}", username, normalizedTheme, normalizedMode);
 
-        // #1. BadgeQueryService.query() : 정규화된 테마가 선언한 needs에 해당하는 사용자 토큰 정보만 조회
+        // #2. BadgeQueryService.query() : 정규화된 테마가 선언한 needs에 해당하는 사용자 토큰 정보만 조회
         BadgeResponse data = queryService.query(username, svgBuilder.needsOf(normalizedTheme));
 
-        // #2. 사용자 토큰 정보 + 정규화된 theme/mode로 배지(SVG) 생성
+        // #3. 사용자 토큰 정보 + 정규화된 theme/mode로 배지(SVG) 생성
         String svg = svgBuilder.build(data, normalizedTheme, normalizedMode);
 
-        // #3. 생성된 배지(SVG)를 Redis에 캐싱
+        // #4. 생성된 배지(SVG)를 Redis에 캐싱
         redis.opsForValue().set(cacheKey, svg, Duration.ofMinutes(cacheTtlMinutes));
-        return svg;
+        return new BadgeSvgResponse(svg, true);
     }
 }

@@ -1,5 +1,6 @@
 package com.tokenphage.api.feature.audit.aspect;
 
+import com.tokenphage.api.audit.AuditOutcome;
 import com.tokenphage.api.feature.audit.dto.RequestAuditCommand;
 import com.tokenphage.api.feature.audit.service.RequestAuditService;
 
@@ -32,9 +33,10 @@ public class RequestAuditAspect {
 
     private static final int STATUS_OK = 200;
     private static final int STATUS_UNEXPECTED_ERROR = 500;
-    private static final String OUTCOME_SUCCESS = "success";
-    private static final String OUTCOME_UNKNOWN = "unknown";
     private static final String CONTROLLER_SUFFIX = "Controller";
+
+    /** request_audit_log.request_path 최대 길이. 초과분은 잘라낸다. */
+    private static final int PATH_MAX_LENGTH = 255;
 
     private final RequestAuditService requestAuditService;
 
@@ -53,11 +55,11 @@ public class RequestAuditAspect {
     public Object audit(ProceedingJoinPoint joinPoint) throws Throwable {
         long startNanos = System.nanoTime();
         int statusCode = STATUS_UNEXPECTED_ERROR;
-        String outcome = OUTCOME_UNKNOWN;
+        String outcome = AuditOutcome.UNKNOWN.getCode();
         try {
             Object result = joinPoint.proceed();
             statusCode = extractStatus(result);
-            outcome = OUTCOME_SUCCESS;
+            outcome = declaredOutcome(currentRequest());
             return result;
         } catch (AppException e) {
             statusCode = e.getErrorCode().getStatus().value();
@@ -88,7 +90,7 @@ public class RequestAuditAspect {
                     resolveFeature(joinPoint),
                     joinPoint.getSignature().getName(),
                     request != null ? request.getMethod() : null,
-                    request != null ? request.getRequestURI() : null,
+                    fullPath(request),
                     statusCode,
                     (int) latencyMs,
                     ClientIpResolver.resolve(request),
@@ -101,6 +103,39 @@ public class RequestAuditAspect {
         } catch (Exception e) {
             log.error("Failed to submit request audit: {}", e.getMessage());
         }
+    }
+
+    /**
+     * 컨트롤러가 지정한 결과 값을 꺼낸다. 미지정이면 success.
+     * <p>
+     * AuditOutcome 타입만 받는다. 문자열을 직접 심는 경로를 막아 오타를 컴파일 단계에서 걸러낸다.
+     * 정상 경로에서만 쓰며, 예외 경로는 에러코드를 그대로 남긴다.
+     */
+    private String declaredOutcome(HttpServletRequest request) {
+        if (request == null) {
+            return AuditOutcome.SUCCESS.getCode();
+        }
+        Object declared = request.getAttribute(AuditOutcome.ATTRIBUTE_KEY);
+        if (declared instanceof AuditOutcome outcome) {
+            return outcome.getCode();
+        }
+        return AuditOutcome.SUCCESS.getCode();
+    }
+
+    /**
+     * 쿼리스트링까지 포함한 요청 경로를 반환한다.
+     * <p>
+     * 접근한 theme을 남기려면 쿼리스트링이 필요하다. 255자 초과분은 잘라낸다 —
+     * 기록이 비동기라 저장에 실패해도 드러나지 않는다.
+     */
+    private String fullPath(HttpServletRequest request) {
+        if (request == null) {
+            return null;
+        }
+        String uri = request.getRequestURI();
+        String query = request.getQueryString();
+        String full = (query == null) ? uri : uri + "?" + query;
+        return full.length() > PATH_MAX_LENGTH ? full.substring(0, PATH_MAX_LENGTH) : full;
     }
 
     /**
