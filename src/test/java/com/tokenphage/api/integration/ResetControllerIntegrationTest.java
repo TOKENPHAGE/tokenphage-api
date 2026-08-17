@@ -1,4 +1,4 @@
-package com.tokenphage.api.feature.reset;
+package com.tokenphage.api.integration;
 
 import com.tokenphage.api.domain.token.repository.DailyTokenUsageRepository;
 import com.tokenphage.api.domain.user.repository.UserRepository;
@@ -19,7 +19,6 @@ import org.springframework.boot.resttestclient.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.*;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -28,18 +27,14 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 전체 초기화(reset) 통합 테스트
- *
- * 흐름: POST /api/sync(상태 적재) → POST /api/reset → DB row 삭제 + 쿨다운(429) 검증.
- * 상태는 실 엔드포인트로만 적재한다(no-mock-data 규칙: 직접 INSERT 금지).
+ * 전체 초기화(reset) 통합 테스트.
+ * <p>
+ * /api/sync 로 상태를 적재한 뒤 /api/reset 을 호출해 행 삭제와 쿨다운(429)을 검증한다.
  */
 @Tag("integration")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@TestPropertySource(properties = {
-    "badge.jwt-secret=dev-secret-change-in-production-x"
-})
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-class ResetFlowIntegrationTest {
+class ResetControllerIntegrationTest extends ContainerSupport {
 
     @LocalServerPort
     private int port;
@@ -52,9 +47,9 @@ class ResetFlowIntegrationTest {
 
     private TestRestTemplate rest;
 
-    // GitHub user ID는 항상 양수(1부터 순차 발급)이므로, 음수는 실제 사용자와 절대 충돌하지 않는 안전한 테스트 전용 값이다.
-    private static final long   GITHUB_ID = -99902L;
-    // username도 GitHub 정책상 불가능한 값(언더스코어는 GitHub 사용자명에 허용되지 않음) → 실유저와 UNIQUE 충돌 불가
+    // 싱글턴 컨테이너 DB를 통합테스트 클래스들이 공유하므로 다른 클래스와 겹치지 않는 값을 쓴다
+    // (SyncControllerIntegrationTest는 99901 / cli_test_user).
+    private static final long   GITHUB_ID = 99902L;
     private static final String USERNAME  = "cli_reset_test";
     private static final String DEVICE_ID = "d3eebc99-9c0b-4ef8-bb6d-6bb9bd380a44";
 
@@ -72,7 +67,8 @@ class ResetFlowIntegrationTest {
 
     @AfterEach
     void cleanUp() {
-        // 실 DB/Redis에 남긴 테스트 fixture를 삭제해 격리를 보장한다 (reset은 토큰만 지우고 users 행은 남김).
+        // 컨테이너는 실행 단위로 일회용이지만 테스트 간에는 공유되므로 직접 정리한다
+        // (reset은 토큰만 지우고 users 행은 남김). RANDOM_PORT + 실제 HTTP라 @Transactional 롤백은 통하지 않는다.
         // @Modifying 삭제는 트랜잭션이 필요하므로 커밋 트랜잭션으로 감싼다 (FK상 토큰 → 사용자 순서).
         new TransactionTemplate(txManager).executeWithoutResult(status -> {
             tokenRepo.deleteAllByGithubId(GITHUB_ID);
