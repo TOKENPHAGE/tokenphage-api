@@ -30,11 +30,11 @@ GitHub 잔디가 당신의 커밋을 보여주듯, **TokenPhage**는 Claude Code
   <tr>
     <td align="center">
       <a href="https://github.com/TOKENPHAGE"><img src="https://api.tokenphage.com/badge/kobenlys?theme=gpu&amp;mode=dark" alt="TokenPhage gpu dark 배지"></a><br/>
-      <code>https://api.tokenphage.com/badge/&lt;your-github-name&gt;?theme=gpu&amp;mode=dark</code>
+      <code>[![Tokenphage](https://api.tokenphage.com/badge/&lt;your-github-name&gt;?theme=gpu&amp;mode=dark)](https://github.com/TOKENPHAGE)</code>
     </td>
     <td align="center">
       <a href="https://github.com/TOKENPHAGE"><img src="https://api.tokenphage.com/badge/kobenlys?theme=claude&amp;mode=light" alt="TokenPhage claude light 배지"></a><br/>
-      <code>https://api.tokenphage.com/badge/&lt;your-github-name&gt;?theme=claude&amp;mode=light</code>
+      <code>[![Tokenphage](https://api.tokenphage.com/badge/&lt;your-github-name&gt;?theme=claude&amp;mode=light)](https://github.com/TOKENPHAGE)</code>
     </td>
   </tr>
 </table>
@@ -145,22 +145,20 @@ tokenphage
 
 #### 🌱 Grass 테마
 
-클로드 마스코트가 **하늘 놀이터**를 걸어 다니는 잔디 스타일 배지. 카드형과 달리 잔디 그리드를 넓게 펼칩니다.
-
 <a href="https://github.com/TOKENPHAGE"><img src="https://api.tokenphage.com/badge/kobenlys?theme=grass-claude" alt="TokenPhage grass-claude light 배지"></a>
 
-`?theme=grass-claude`
+`[![Tokenphage](https://api.tokenphage.com/badge/<your-github-name>?theme=grass-claude)](https://github.com/TOKENPHAGE)`
 
 <a href="https://github.com/TOKENPHAGE"><img src="https://api.tokenphage.com/badge/kobenlys?theme=grass-claude&amp;mode=dark" alt="TokenPhage grass-claude dark 배지"></a>
 
-`?theme=grass-claude&mode=dark`
+`[![Tokenphage](https://api.tokenphage.com/badge/<your-github-name>?theme=grass-claude&mode=dark)](https://github.com/TOKENPHAGE)`
 
 #### 🌗 색상 모드
 
 <table>
 <tr>
-<td align="center"><img src="https://api.tokenphage.com/badge/kobenlys?mode=light" width="300"/><br/><sub><code>mode=light</code></sub></td>
-<td align="center"><img src="https://api.tokenphage.com/badge/kobenlys?mode=dark" width="300"/><br/><sub><code>mode=dark</code></sub></td>
+<td align="center"><img src="https://api.tokenphage.com/badge/kobenlys?mode=light" width="300"/><br/><sub><code>[![Tokenphage](https://api.tokenphage.com/badge/&lt;your-github-name&gt;?mode=light)](https://github.com/TOKENPHAGE)</code></sub></td>
+<td align="center"><img src="https://api.tokenphage.com/badge/kobenlys?mode=dark" width="300"/><br/><sub><code>[![Tokenphage](https://api.tokenphage.com/badge/&lt;your-github-name&gt;?mode=dark)](https://github.com/TOKENPHAGE)</code></sub></td>
 </tr>
 </table>
 
