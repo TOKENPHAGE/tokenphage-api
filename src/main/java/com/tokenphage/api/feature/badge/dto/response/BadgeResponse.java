@@ -18,6 +18,7 @@ import java.util.List;
  * @param yearTokens   최근 1년 총 토큰 — {@code YEAR_TOKENS}
  * @param streakDays   연속 사용일 — {@code STREAK_DAYS}
  * @param daily1y      최근 1년 일별 사용량 — {@code DAILY_1Y}
+ * @param snapshot     고정 스냅샷 payload JSON 원문 — {@code BADGE_SNAPSHOT} (없으면 빈 문자열, 해석은 배지 패키지 소유)
  */
 public record BadgeResponse(
     // ── 공통 ──
@@ -30,5 +31,7 @@ public record BadgeResponse(
     // ── 1년 활동 데이터 (grass 계열) ──
     long yearTokens,
     int streakDays,
-    List<DailyCountResponse> daily1y
+    List<DailyCountResponse> daily1y,
+    // ── 고정 스냅샷 (beta-tester 등 값이 변하지 않는 배지) ──
+    String snapshot
 ) {}

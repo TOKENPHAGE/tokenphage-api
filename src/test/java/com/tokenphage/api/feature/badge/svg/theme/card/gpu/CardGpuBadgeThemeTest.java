@@ -3,6 +3,7 @@ package com.tokenphage.api.feature.badge.svg.theme.card.gpu;
 import com.tokenphage.api.feature.badge.dto.response.BadgeResponse;
 import com.tokenphage.api.feature.badge.dto.response.DailyCountResponse;
 import com.tokenphage.api.feature.badge.dto.response.ModelCountResponse;
+import com.tokenphage.api.feature.badge.svg.BadgeMode;
 import com.tokenphage.api.feature.badge.svg.SvgText;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -44,7 +45,7 @@ class CardGpuBadgeThemeTest {
             new ModelCountResponse("claude-sonnet-4-5",            120_000),
             new ModelCountResponse("gpt-4o",                        80_000)
         );
-        return new BadgeResponse("leeyoungseok", 15_430_000L, daily30d, topModels, 0.87, 0L, 0, List.of());
+        return new BadgeResponse("leeyoungseok", 15_430_000L, daily30d, topModels, 0.87, 0L, 0, List.of(), "");
     }
 
     private static int countOccurrences(String text, String token) {
@@ -62,35 +63,35 @@ class CardGpuBadgeThemeTest {
 
         @Test @DisplayName("라이트 모드 — SVG 루트 태그 및 540×210 크기 포함")
         void lightMode_svgTagWithCorrectDimensions() {
-            String svg = gpuTheme.build(sampleData(), false);
+            String svg = gpuTheme.build(sampleData(), BadgeMode.LIGHT);
             assertThat(svg).contains("<svg ").contains("</svg>")
                 .contains("width=\"540\"").contains("height=\"210\"");
         }
 
         @Test @DisplayName("다크 모드 — SVG 정상 생성")
         void darkMode_svgGenerated() {
-            assertThat(gpuTheme.build(sampleData(), true)).contains("<svg ").contains("</svg>");
+            assertThat(gpuTheme.build(sampleData(), BadgeMode.DARK)).contains("<svg ").contains("</svg>");
         }
 
         @Test @DisplayName("라이트 모드 — 흰색 배경 (#ffffff)")
         void lightMode_whiteBackground() {
-            assertThat(gpuTheme.build(sampleData(), false)).contains("#ffffff");
+            assertThat(gpuTheme.build(sampleData(), BadgeMode.LIGHT)).contains("#ffffff");
         }
 
         @Test @DisplayName("다크 모드 — 다크 배경 (#0f172a)")
         void darkMode_darkBackground() {
-            assertThat(gpuTheme.build(sampleData(), true)).contains("#0f172a");
+            assertThat(gpuTheme.build(sampleData(), BadgeMode.DARK)).contains("#0f172a");
         }
 
         @Test @DisplayName("aria-label에 사용자명 포함 (접근성)")
         void svg_ariaLabelContainsUsername() {
-            assertThat(gpuTheme.build(sampleData(), false))
+            assertThat(gpuTheme.build(sampleData(), BadgeMode.LIGHT))
                 .contains("aria-label=\"TokenBadge leeyoungseok\"");
         }
 
         @Test @DisplayName("가로/세로 구분선 포함")
         void svg_containsDividers() {
-            String svg = gpuTheme.build(sampleData(), false);
+            String svg = gpuTheme.build(sampleData(), BadgeMode.LIGHT);
             assertThat(svg).contains("x1=\"20\" y1=\"76\"")
                 .contains("x1=\"280\"").contains("x2=\"280\"");
         }
@@ -101,20 +102,20 @@ class CardGpuBadgeThemeTest {
 
         @Test @DisplayName("사용자명이 @ 접두사와 함께 SVG에 포함됨")
         void username_renderedInSvg() {
-            assertThat(gpuTheme.build(sampleData(), false)).contains("@leeyoungseok");
+            assertThat(gpuTheme.build(sampleData(), BadgeMode.LIGHT)).contains("@leeyoungseok");
         }
 
         @Test @DisplayName("HTML 특수문자 사용자명 → 이스케이프 (XSS 방어)")
         void username_htmlEscaped() {
-            BadgeResponse data = new BadgeResponse("<script>xss</script>", 0L, List.of(), List.of(), 0.0, 0L, 0, List.of());
-            String svg = gpuTheme.build(data, false);
+            BadgeResponse data = new BadgeResponse("<script>xss</script>", 0L, List.of(), List.of(), 0.0, 0L, 0, List.of(), "");
+            String svg = gpuTheme.build(data, BadgeMode.LIGHT);
             assertThat(svg).doesNotContain("<script>").contains("&lt;script&gt;");
         }
 
         @Test @DisplayName("앰퍼샌드 포함 사용자명 → &amp; 이스케이프")
         void username_ampersandEscaped() {
-            BadgeResponse data = new BadgeResponse("user&dev", 0L, List.of(), List.of(), 0.0, 0L, 0, List.of());
-            String svg = gpuTheme.build(data, false);
+            BadgeResponse data = new BadgeResponse("user&dev", 0L, List.of(), List.of(), 0.0, 0L, 0, List.of(), "");
+            String svg = gpuTheme.build(data, BadgeMode.LIGHT);
             assertThat(svg).doesNotContain("user&dev").contains("user&amp;dev");
         }
     }
@@ -137,17 +138,17 @@ class CardGpuBadgeThemeTest {
 
         @Test @DisplayName("총 토큰 15.4M이 SVG에 렌더링됨")
         void totalTokens_renderedAsMega() {
-            assertThat(gpuTheme.build(sampleData(), false)).contains("15.4M");
+            assertThat(gpuTheme.build(sampleData(), BadgeMode.LIGHT)).contains("15.4M");
         }
 
         @Test @DisplayName("'tokens' 단위 레이블 포함")
         void tokensUnitLabel_present() {
-            assertThat(gpuTheme.build(sampleData(), false)).contains("tokens");
+            assertThat(gpuTheme.build(sampleData(), BadgeMode.LIGHT)).contains("tokens");
         }
 
         @Test @DisplayName("'TOKEN 누적' 섹션 레이블 포함")
         void tokenSectionLabel_present() {
-            assertThat(gpuTheme.build(sampleData(), false)).contains("TOKEN 누적");
+            assertThat(gpuTheme.build(sampleData(), BadgeMode.LIGHT)).contains("TOKEN 누적");
         }
     }
 
@@ -156,23 +157,23 @@ class CardGpuBadgeThemeTest {
 
         @Test @DisplayName("히트바 막대가 정확히 30개 (rx=2 기준)")
         void heatbar_exactly30Rects() {
-            assertThat(countOccurrences(gpuTheme.build(sampleData(), false), "rx=\"2\"")).isEqualTo(30);
+            assertThat(countOccurrences(gpuTheme.build(sampleData(), BadgeMode.LIGHT), "rx=\"2\"")).isEqualTo(30);
         }
 
         @Test @DisplayName("'최근 30일' 레이블 포함")
         void heatbar_30daysLabel() {
-            assertThat(gpuTheme.build(sampleData(), false)).contains("최근 30일");
+            assertThat(gpuTheme.build(sampleData(), BadgeMode.LIGHT)).contains("최근 30일");
         }
 
         @Test @DisplayName("데이터 없어도 막대 30개 생성 (all min-height)")
         void emptyHeatbar_still30Rects() {
-            BadgeResponse data = new BadgeResponse("newuser", 0L, List.of(), List.of(), 0.0, 0L, 0, List.of());
-            assertThat(countOccurrences(gpuTheme.build(data, false), "rx=\"2\"")).isEqualTo(30);
+            BadgeResponse data = new BadgeResponse("newuser", 0L, List.of(), List.of(), 0.0, 0L, 0, List.of(), "");
+            assertThat(countOccurrences(gpuTheme.build(data, BadgeMode.LIGHT), "rx=\"2\"")).isEqualTo(30);
         }
 
         @Test @DisplayName("히트바 translate 그룹 포함 (왼쪽 패널 기준선 정렬)")
         void heatbar_containsTranslateGroup() {
-            assertThat(gpuTheme.build(sampleData(), false)).contains("translate(30, 164)");
+            assertThat(gpuTheme.build(sampleData(), BadgeMode.LIGHT)).contains("translate(30, 164)");
         }
     }
 
@@ -181,39 +182,39 @@ class CardGpuBadgeThemeTest {
 
         @Test @DisplayName("'Top 5 Models' 섹션 레이블 포함")
         void topModels_sectionLabel() {
-            assertThat(gpuTheme.build(sampleData(), false)).contains("Top 5 Models");
+            assertThat(gpuTheme.build(sampleData(), BadgeMode.LIGHT)).contains("Top 5 Models");
         }
 
         @Test @DisplayName("모델명에서 claude- 접두사 제거됨")
         void modelName_claudePrefixStripped() {
-            String svg = gpuTheme.build(sampleData(), false);
+            String svg = gpuTheme.build(sampleData(), BadgeMode.LIGHT);
             assertThat(svg).contains("sonnet-4-6").contains("opus-4-7");
         }
 
         @Test @DisplayName("모델명에서 -latest 접미사 제거됨")
         void modelName_latestSuffixStripped() {
             BadgeResponse data = new BadgeResponse("u", 100_000L, List.of(),
-                List.of(new ModelCountResponse("claude-sonnet-latest", 100_000)), 0.0, 0L, 0, List.of());
-            assertThat(gpuTheme.build(data, false)).doesNotContain("-latest");
+                List.of(new ModelCountResponse("claude-sonnet-latest", 100_000)), 0.0, 0L, 0, List.of(), "");
+            assertThat(gpuTheme.build(data, BadgeMode.LIGHT)).doesNotContain("-latest");
         }
 
         @Test @DisplayName("모델 토큰이 K/M 포맷으로 표시됨")
         void modelTokens_formattedWithUnit() {
-            String svg = gpuTheme.build(sampleData(), false);
+            String svg = gpuTheme.build(sampleData(), BadgeMode.LIGHT);
             assertThat(svg).contains("1.2M").contains("450.0K");
         }
 
         @Test @DisplayName("5개 미만 모델 — 빈 슬롯은 '--' 표시")
         void fewerThan5Models_emptySlotsDashDash() {
             BadgeResponse data = new BadgeResponse("u", 100_000L, List.of(),
-                List.of(new ModelCountResponse("claude-sonnet-4-6", 100_000)), 0.0, 0L, 0, List.of());
-            assertThat(gpuTheme.build(data, false)).contains("--");
+                List.of(new ModelCountResponse("claude-sonnet-4-6", 100_000)), 0.0, 0L, 0, List.of(), "");
+            assertThat(gpuTheme.build(data, BadgeMode.LIGHT)).contains("--");
         }
 
         @Test @DisplayName("항상 5행 렌더링 — 순위 배지 5개 포함")
         void always5RankBadges() {
-            BadgeResponse data = new BadgeResponse("u", 0L, List.of(), List.of(), 0.0, 0L, 0, List.of());
-            String svg = gpuTheme.build(data, false);
+            BadgeResponse data = new BadgeResponse("u", 0L, List.of(), List.of(), 0.0, 0L, 0, List.of(), "");
+            String svg = gpuTheme.build(data, BadgeMode.LIGHT);
             int circles = 0, idx = 0;
             while ((idx = svg.indexOf("<circle", idx)) != -1) { circles++; idx++; }
             assertThat(circles).isEqualTo(5);
@@ -225,26 +226,26 @@ class CardGpuBadgeThemeTest {
 
         @Test @DisplayName("87% 적중률 → 'CACHE HIT RATE' 레이블 및 '87.0%' 표시")
         void highRate_renderedGreen() {
-            String svg = gpuTheme.build(sampleData(), false);
+            String svg = gpuTheme.build(sampleData(), BadgeMode.LIGHT);
             assertThat(svg).contains("CACHE HIT RATE").contains("87.0%").contains("#16a34a");
         }
 
         @Test @DisplayName("0% 적중률 → '0.0%' 표시 (회색)")
         void zeroRate_renderedGray() {
-            BadgeResponse data = new BadgeResponse("u", 0L, List.of(), List.of(), 0.0, 0L, 0, List.of());
-            assertThat(gpuTheme.build(data, false)).contains("0.0%");
+            BadgeResponse data = new BadgeResponse("u", 0L, List.of(), List.of(), 0.0, 0L, 0, List.of(), "");
+            assertThat(gpuTheme.build(data, BadgeMode.LIGHT)).contains("0.0%");
         }
 
         @Test @DisplayName("중간 적중률(50%) → 주황색 (#d97706) 표시")
         void midRate_renderedOrange() {
-            BadgeResponse data = new BadgeResponse("u", 0L, List.of(), List.of(), 0.5, 0L, 0, List.of());
-            String svg = gpuTheme.build(data, false);
+            BadgeResponse data = new BadgeResponse("u", 0L, List.of(), List.of(), 0.5, 0L, 0, List.of(), "");
+            String svg = gpuTheme.build(data, BadgeMode.LIGHT);
             assertThat(svg).contains("50.0%").contains("#d97706");
         }
 
         @Test @DisplayName("다크 모드 고적중률 → 초록색 (#4ade80)")
         void darkHighRate_renderedGreen() {
-            assertThat(gpuTheme.build(sampleData(), true)).contains("#4ade80");
+            assertThat(gpuTheme.build(sampleData(), BadgeMode.DARK)).contains("#4ade80");
         }
     }
 
@@ -253,13 +254,13 @@ class CardGpuBadgeThemeTest {
 
         // 레벨 분기를 타도록 누적 토큰만 지정한 최소 데이터 (캐시율 0.5 → 캐시색 #d97706, 마스코트 색과 비충돌)
         private BadgeResponse levelData(long totalTokens) {
-            return new BadgeResponse("u", totalTokens, List.of(), List.of(), 0.5, 0L, 0, List.of());
+            return new BadgeResponse("u", totalTokens, List.of(), List.of(), 0.5, 0L, 0, List.of(), "");
         }
 
         @Test @DisplayName("애니메이션 요소(animateTransform, repeatCount) 포함")
         void mascot_containsAnimationElements() {
             // given / when
-            String svg = gpuTheme.build(sampleData(), false);
+            String svg = gpuTheme.build(sampleData(), BadgeMode.LIGHT);
             // then
             assertThat(svg).contains("animateTransform").contains("repeatCount=\"indefinite\"");
         }
@@ -269,7 +270,7 @@ class CardGpuBadgeThemeTest {
             // given
             BadgeResponse data = levelData(5_000_000L);
             // when
-            String svg = gpuTheme.build(data, false);
+            String svg = gpuTheme.build(data, BadgeMode.LIGHT);
             // then
             assertThat(svg)
                 .doesNotContain("glow-gpu-l1")
@@ -283,7 +284,7 @@ class CardGpuBadgeThemeTest {
             // given
             BadgeResponse data = levelData(300_000_000L);
             // when
-            String svg = gpuTheme.build(data, false);
+            String svg = gpuTheme.build(data, BadgeMode.LIGHT);
             // then
             assertThat(svg)
                 .contains("#65a30d")
@@ -297,7 +298,7 @@ class CardGpuBadgeThemeTest {
             // given
             BadgeResponse data = levelData(800_000_000L);
             // when
-            String svg = gpuTheme.build(data, false);
+            String svg = gpuTheme.build(data, BadgeMode.LIGHT);
             // then
             assertThat(svg).contains("#ea580c").contains("glow-gpu-l4");
             assertThat(countOccurrences(svg, "gpu-spark")).isEqualTo(1);
@@ -308,7 +309,7 @@ class CardGpuBadgeThemeTest {
             // given
             BadgeResponse data = levelData(5_000_000_000L);
             // when
-            String svg = gpuTheme.build(data, false);
+            String svg = gpuTheme.build(data, BadgeMode.LIGHT);
             // then
             assertThat(svg)
                 .contains("#dc2626")
@@ -327,7 +328,7 @@ class CardGpuBadgeThemeTest {
         })
         void mascot_fanDurByLevel(long totalTokens, String expectedDur) {
             // given / when
-            String svg = gpuTheme.build(levelData(totalTokens), false);
+            String svg = gpuTheme.build(levelData(totalTokens), BadgeMode.LIGHT);
             // then
             assertThat(svg).contains("dur=\"" + expectedDur + "\"");
         }
@@ -335,8 +336,8 @@ class CardGpuBadgeThemeTest {
         @Test @DisplayName("열파 입자는 레벨이 오를수록 늘어난다 (Lv.1=1개 < Lv.5=5개)")
         void mascot_heatParticlesIncreaseWithLevel() {
             // given / when
-            int lv1 = countOccurrences(gpuTheme.build(levelData(5_000_000L), false), "gpu-heat");
-            int lv5 = countOccurrences(gpuTheme.build(levelData(5_000_000_000L), false), "gpu-heat");
+            int lv1 = countOccurrences(gpuTheme.build(levelData(5_000_000L), BadgeMode.LIGHT), "gpu-heat");
+            int lv5 = countOccurrences(gpuTheme.build(levelData(5_000_000_000L), BadgeMode.LIGHT), "gpu-heat");
             // then
             assertThat(lv1).isEqualTo(1);
             assertThat(lv5).isEqualTo(5);

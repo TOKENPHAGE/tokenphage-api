@@ -16,8 +16,6 @@ import java.util.stream.Collectors;
 public class SvgBuilder {
 
     private static final String DEFAULT_THEME = BadgeCode.GPU.getCode();
-    private static final String DARK_MODE = "dark";
-    private static final String LIGHT_MODE = "light";
 
     private final Map<String, BadgeTheme> themes;
 
@@ -28,19 +26,19 @@ public class SvgBuilder {
 
     /**
      * theme과 mode에 맞는 BadgeTheme을 선택하여 SVG를 생성한다.
-     * 등록되지 않은 theme은 기본 테마("gpu")로, "dark"가 아닌 mode는 "light"로 정규화한다.
+     * 등록되지 않은 theme은 기본 테마("gpu")로, mode는 {@link #resolveMode}로 정규화한다.
      *
      * @param data  배지에 표시할 사용자 데이터 (null 불허)
      * @param theme 뱃지 스킨 종류 (예: "gpu")
-     * @param mode  색상 모드 ("dark" 또는 "light")
+     * @param mode  색상 모드 (테마별 지원 값, null 허용)
      * @return 완성된 SVG 마크업 문자열
      * @Since 2026-05-27
      */
     public String build(BadgeResponse data, String theme, String mode) {
         BadgeTheme selected = themes.get(normalizeTheme(theme));
-        boolean isDark = DARK_MODE.equals(normalizeMode(mode));
+        BadgeMode resolved = resolveMode(theme, mode);
         log.debug("Building SVG badge: user={}, theme={}, mode={}", data.username(), theme, mode);
-        return selected.build(data, isDark);
+        return selected.build(data, resolved);
     }
 
     /**
@@ -77,29 +75,18 @@ public class SvgBuilder {
     }
 
     /**
-     * mode 문자열을 "dark" 또는 "light"로 정규화한다.
+     * mode 문자열을 해당 테마가 지원하는 모드로 정규화한다.
      * <p>
-     * "dark"(대소문자 무관)면 "dark"를, 그 외 모든 값(null 포함)은 "light"를 반환한다.
+     * <b>테마별로</b> 정규화한다 — 테마가 지원하지 않는 값(null·공백 포함)은 그 테마의
+     * {@link BadgeTheme#defaultMode()}로 접는다. 캐시 키 카디널리티가 테마별 지원 집합으로 묶인다.
      *
-     * @param mode 원본 mode 파라미터 (null 허용)
-     * @return "dark" 또는 "light"
-     * @Since 2026-06-11
+     * @param theme 원본 theme 파라미터 (null 허용, 미등록이면 기본 테마 기준)
+     * @param mode  원본 mode 파라미터 (null 허용)
+     * @return 테마 지원 집합 내부 모드
+     * @Since 2026-08-23
      */
-    public String normalizeMode(String mode) {
-        return DARK_MODE.equalsIgnoreCase(mode) ? DARK_MODE : LIGHT_MODE;
-    }
-
-    /**
-     * mode 문자열이 다크 모드인지 판정한다.
-     * <p>
-     * BadgeTheme.build()는 boolean isDark를 받으므로, 디스패처를 거치지 않고 테마를 직접
-     * 호출하는 쪽(잠금 안내 렌더)이 같은 기준으로 변환할 수 있게 노출한다.
-     *
-     * @param mode 원본 또는 정규화된 mode 문자열 (null 허용)
-     * @return "dark"면 true, 그 외에는 false
-     * @Since 2026-08-10
-     */
-    public boolean isDark(String mode) {
-        return DARK_MODE.equalsIgnoreCase(mode);
+    public BadgeMode resolveMode(String theme, String mode) {
+        BadgeTheme selected = themes.get(normalizeTheme(theme));
+        return BadgeMode.from(mode, selected.supportedModes(), selected.defaultMode());
     }
 }

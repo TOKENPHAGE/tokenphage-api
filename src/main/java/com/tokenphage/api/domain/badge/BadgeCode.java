@@ -18,6 +18,9 @@ public enum BadgeCode {
     CLAUDE("claude"),
     GRASS_CLAUDE("grass-claude"),
 
+    /** 클로즈드 베타(2026-07~08) 기여자에게 운영자가 부여하는 배지. 표시 값은 고정 스냅샷에서 온다. */
+    BETA_TESTER("beta-tester"),
+
     /** 자격이 없어 사용할 수 없음을 알리는 안내 배지. 사용자가 직접 고르는 테마는 아니다. */
     LOCKED("locked");
 
