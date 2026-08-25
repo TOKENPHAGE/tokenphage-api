@@ -31,7 +31,10 @@ public enum BadgeDataNeed {
     STREAK_DAYS(365),
 
     /** 최근 1년 총 토큰 — 1년 일별 데이터에서 파생 → BadgeResponse.yearTokens */
-    YEAR_TOKENS(365);
+    YEAR_TOKENS(365),
+
+    /** 값이 고정된 배지의 미리 계산된 스냅샷 JSON → BadgeResponse.snapshot */
+    BADGE_SNAPSHOT(0);
 
     /** 이 데이터를 채우는 데 필요한 일별 조회 창(일). 0이면 일별 조회가 필요 없다. */
     private final int dailyWindowDays;

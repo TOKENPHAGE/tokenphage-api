@@ -27,6 +27,7 @@ class BadgeCodeTest {
                 "GPU, gpu",
                 "CLAUDE, claude",
                 "GRASS_CLAUDE, grass-claude",
+                "BETA_TESTER, beta-tester",
                 "LOCKED, locked"
         })
         @DisplayName("코드조회_각상수_정해진문자열반환")
@@ -59,15 +60,16 @@ class BadgeCodeTest {
     class AllCodesTest {
 
         @Test
-        @DisplayName("전체코드_호출_등록된4종반환")
-        void 전체코드_호출_등록된4종반환() {
+        @DisplayName("전체코드_호출_등록된5종반환")
+        void 전체코드_호출_등록된5종반환() {
             // given
 
             // when
             Set<String> result = BadgeCode.allCodes();
 
             // then
-            assertThat(result).containsExactlyInAnyOrder("gpu", "claude", "grass-claude", "locked");
+            assertThat(result).containsExactlyInAnyOrder(
+                    "gpu", "claude", "grass-claude", "beta-tester", "locked");
         }
 
         @Test

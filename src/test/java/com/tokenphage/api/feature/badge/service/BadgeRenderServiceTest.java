@@ -1,5 +1,6 @@
 package com.tokenphage.api.feature.badge.service;
 
+import com.tokenphage.api.domain.badge.BadgeCode;
 import com.tokenphage.api.domain.badge.service.BadgeGrantResult;
 import com.tokenphage.api.domain.badge.service.BadgeGrantService;
 import com.tokenphage.api.exception.AppException;
@@ -7,6 +8,7 @@ import com.tokenphage.api.feature.badge.dto.response.BadgeResponse;
 import com.tokenphage.api.feature.badge.dto.response.BadgeSvgResponse;
 import com.tokenphage.api.feature.badge.exception.BadgeErrorCode;
 import com.tokenphage.api.feature.badge.svg.BadgeDataNeed;
+import com.tokenphage.api.feature.badge.svg.BadgeMode;
 import com.tokenphage.api.feature.badge.svg.SvgBuilder;
 import com.tokenphage.api.feature.badge.svg.theme.locked.LockedBadgeTheme;
 import org.junit.jupiter.api.BeforeEach;
@@ -84,13 +86,13 @@ class BadgeRenderServiceTest {
      * 배지 데이터를 위한 테스트 전용 픽스처를 생성한다 (메모리 전용, 실 DB 미접촉).
      */
     private BadgeResponse sampleData() {
-        return new BadgeResponse(USERNAME, 12_345L, List.of(), List.of(), 0.5, 0L, 0, List.of());
+        return new BadgeResponse(USERNAME, 12_345L, List.of(), List.of(), 0.5, 0L, 0, List.of(), "");
     }
 
-    /** theme/mode가 이미 정규화된 값(gpu/light)일 때의 정규화 스텁. */
+    /** theme이 이미 정규화된 값(gpu)이고 mode가 LIGHT로 확정될 때의 정규화 스텁. */
     private void stubNormalizeIdentity() {
         when(svgBuilder.normalizeTheme(THEME)).thenReturn(THEME);
-        when(svgBuilder.normalizeMode(MODE)).thenReturn(MODE);
+        when(svgBuilder.resolveMode(THEME, MODE)).thenReturn(BadgeMode.LIGHT);
     }
 
     /** 자격이 있는 정상 경로 스텁. 이 스텁이 없으면 Mockito 기본값(null)으로 NPE가 난다. */
@@ -108,10 +110,11 @@ class BadgeRenderServiceTest {
         void 배지조회_자격없음_잠금SVG반환하고조회캐시생략() {
             // given
             String lockedSvg = "<svg>locked</svg>";
-            stubNormalizeIdentity();
+            when(svgBuilder.normalizeTheme(THEME)).thenReturn(THEME);
             when(badgeGrantService.resolveGrant(USERNAME, THEME))
                     .thenReturn(BadgeGrantResult.deny("Contributor", "PR을 보내주세요"));
-            when(svgBuilder.isDark(MODE)).thenReturn(false);
+            // 잠금 렌더는 locked 테마 자신의 지원 집합으로 모드를 다시 정규화한다
+            when(svgBuilder.resolveMode(BadgeCode.LOCKED.getCode(), MODE)).thenReturn(BadgeMode.LIGHT);
             when(lockedBadgeTheme.render("Contributor", "PR을 보내주세요", false)).thenReturn(lockedSvg);
 
             // when
@@ -121,7 +124,7 @@ class BadgeRenderServiceTest {
             assertThat(result.svg()).isEqualTo(lockedSvg);
             assertThat(result.granted()).isFalse();
             // 자격 거부 경로는 집계 조회·SVG 빌드·캐시 저장을 전부 건너뛴다
-            verify(queryService, never()).query(anyString(), any());
+            verify(queryService, never()).query(anyString(), anyString(), any());
             verify(svgBuilder, never()).build(any(), anyString(), anyString());
             verify(valueOps, never()).set(anyString(), anyString(), any(Duration.class));
         }
@@ -130,10 +133,10 @@ class BadgeRenderServiceTest {
         @DisplayName("배지조회_자격없음_캐시를조회조차하지않는다")
         void 배지조회_자격없음_캐시를조회조차하지않는다() {
             // given
-            stubNormalizeIdentity();
+            when(svgBuilder.normalizeTheme(THEME)).thenReturn(THEME);
             when(badgeGrantService.resolveGrant(USERNAME, THEME))
                     .thenReturn(BadgeGrantResult.deny(null, null));
-            when(svgBuilder.isDark(MODE)).thenReturn(false);
+            when(svgBuilder.resolveMode(BadgeCode.LOCKED.getCode(), MODE)).thenReturn(BadgeMode.LIGHT);
             when(lockedBadgeTheme.render(null, null, false)).thenReturn("<svg>locked</svg>");
 
             // when
@@ -182,7 +185,7 @@ class BadgeRenderServiceTest {
             // then
             assertThat(result.svg()).isEqualTo(cachedSvg);
             assertThat(result.granted()).isTrue();
-            verify(queryService, never()).query(anyString(), any());
+            verify(queryService, never()).query(anyString(), anyString(), any());
             verify(svgBuilder, never()).build(any(), anyString(), anyString());
             // 캐시 히트 시 set은 호출되지 않아야 한다
             verify(valueOps, never()).set(anyString(), anyString(), any(Duration.class));
@@ -204,7 +207,7 @@ class BadgeRenderServiceTest {
             when(redis.opsForValue()).thenReturn(valueOps);
             when(valueOps.get(EXPECTED_CACHE_KEY)).thenReturn(null);
             when(svgBuilder.needsOf(THEME)).thenReturn(GPU_NEEDS);
-            when(queryService.query(USERNAME, GPU_NEEDS)).thenReturn(data);
+            when(queryService.query(USERNAME, THEME, GPU_NEEDS)).thenReturn(data);
             when(svgBuilder.build(data, THEME, MODE)).thenReturn(builtSvg);
 
             // when
@@ -213,7 +216,7 @@ class BadgeRenderServiceTest {
             // then
             assertThat(result.svg()).isEqualTo(builtSvg);
             assertThat(result.granted()).isTrue();
-            verify(queryService).query(USERNAME, GPU_NEEDS);
+            verify(queryService).query(USERNAME, THEME, GPU_NEEDS);
             verify(svgBuilder).build(data, THEME, MODE);
         }
 
@@ -228,7 +231,7 @@ class BadgeRenderServiceTest {
             when(redis.opsForValue()).thenReturn(valueOps);
             when(valueOps.get(EXPECTED_CACHE_KEY)).thenReturn(null);
             when(svgBuilder.needsOf(THEME)).thenReturn(GPU_NEEDS);
-            when(queryService.query(USERNAME, GPU_NEEDS)).thenReturn(data);
+            when(queryService.query(USERNAME, THEME, GPU_NEEDS)).thenReturn(data);
             when(svgBuilder.build(data, THEME, MODE)).thenReturn(builtSvg);
 
             ArgumentCaptor<String> keyCaptor = ArgumentCaptor.forClass(String.class);
@@ -250,13 +253,13 @@ class BadgeRenderServiceTest {
             BadgeResponse data = sampleData();
             String builtSvg = "<svg>built</svg>";
             when(svgBuilder.normalizeTheme("ZZZ")).thenReturn("gpu");
-            when(svgBuilder.normalizeMode("GARBAGE")).thenReturn("light");
+            when(svgBuilder.resolveMode("gpu", "GARBAGE")).thenReturn(BadgeMode.LIGHT);
             stubGranted();
             when(redis.opsForValue()).thenReturn(valueOps);
             when(valueOps.get(EXPECTED_CACHE_KEY)).thenReturn(null);
             // needsOf는 정규화된 theme("gpu")로 호출된다
             when(svgBuilder.needsOf("gpu")).thenReturn(GPU_NEEDS);
-            when(queryService.query(USERNAME, GPU_NEEDS)).thenReturn(data);
+            when(queryService.query(USERNAME, THEME, GPU_NEEDS)).thenReturn(data);
             when(svgBuilder.build(data, "gpu", "light")).thenReturn(builtSvg);
 
             ArgumentCaptor<String> keyCaptor = ArgumentCaptor.forClass(String.class);
@@ -287,7 +290,7 @@ class BadgeRenderServiceTest {
             when(redis.opsForValue()).thenReturn(valueOps);
             when(valueOps.get(EXPECTED_CACHE_KEY)).thenReturn(null);
             when(svgBuilder.needsOf(THEME)).thenReturn(GPU_NEEDS);
-            when(queryService.query(USERNAME, GPU_NEEDS))
+            when(queryService.query(USERNAME, THEME, GPU_NEEDS))
                     .thenThrow(new AppException(BadgeErrorCode.USER_NOT_FOUND));
 
             // when & then

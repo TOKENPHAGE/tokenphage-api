@@ -1,5 +1,6 @@
 package com.tokenphage.api.feature.badge.service;
 
+import com.tokenphage.api.domain.badge.repository.BadgeSnapshotRepository;
 import com.tokenphage.api.domain.token.repository.DailyTokenUsageRepository;
 import com.tokenphage.api.domain.token.repository.projection.CacheTokenSum;
 import com.tokenphage.api.domain.token.repository.projection.DailyUsageRow;
@@ -49,6 +50,8 @@ class BadgeQueryServiceTest {
     private static final String TIMEZONE = "Asia/Seoul";
     private static final Long GITHUB_ID = -12345L;
     private static final String USERNAME = "octocat";
+    // 기존 시나리오의 배지 코드 — 스냅샷 미요구 경로라 값 자체는 조회에 쓰이지 않는다.
+    private static final String BADGE_CODE = "gpu";
     // gpu/claude 통계 카드 테마의 기본 요구 데이터(4종) — 기존 시나리오는 이 needs로 조회한다.
     private static final Set<BadgeDataNeed> GPU_NEEDS = EnumSet.of(
             BadgeDataNeed.TOTAL_TOKENS, BadgeDataNeed.DAILY_30D,
@@ -59,6 +62,9 @@ class BadgeQueryServiceTest {
 
     @Mock
     private DailyTokenUsageRepository tokenRepo;
+
+    @Mock
+    private BadgeSnapshotRepository snapshotRepo;
 
     @InjectMocks
     private BadgeQueryService service;
@@ -117,7 +123,7 @@ class BadgeQueryServiceTest {
 
             // when
             // then
-            assertThatThrownBy(() -> service.query("ghost", GPU_NEEDS))
+            assertThatThrownBy(() -> service.query("ghost", BADGE_CODE, GPU_NEEDS))
                     .isInstanceOf(AppException.class)
                     .satisfies(ex -> assertThat(((AppException) ex).getErrorCode())
                             .isEqualTo(BadgeErrorCode.USER_NOT_FOUND));
@@ -150,7 +156,7 @@ class BadgeQueryServiceTest {
                     .thenReturn(List.of(cache));
 
             // when
-            BadgeResponse res = service.query(USERNAME, GPU_NEEDS);
+            BadgeResponse res = service.query(USERNAME, BADGE_CODE, GPU_NEEDS);
 
             // then
             assertThat(res.username()).isEqualTo(USERNAME);
@@ -178,7 +184,7 @@ class BadgeQueryServiceTest {
             when(tokenRepo.sumCacheTokens(GITHUB_ID)).thenReturn(List.of());
 
             // when
-            BadgeResponse res = service.query(USERNAME, GPU_NEEDS);
+            BadgeResponse res = service.query(USERNAME, BADGE_CODE, GPU_NEEDS);
 
             // then
             assertThat(res.topModels()).isEmpty();
@@ -202,7 +208,7 @@ class BadgeQueryServiceTest {
             when(tokenRepo.sumCacheTokens(GITHUB_ID)).thenReturn(List.of());
 
             // when
-            BadgeResponse res = service.query(USERNAME, GPU_NEEDS);
+            BadgeResponse res = service.query(USERNAME, BADGE_CODE, GPU_NEEDS);
 
             // then
             assertThat(res.totalTokens()).isEqualTo(0L);
@@ -221,7 +227,7 @@ class BadgeQueryServiceTest {
             when(tokenRepo.sumCacheTokens(GITHUB_ID)).thenReturn(List.of());
 
             // when
-            BadgeResponse res = service.query(USERNAME, GPU_NEEDS);
+            BadgeResponse res = service.query(USERNAME, BADGE_CODE, GPU_NEEDS);
 
             // then
             assertThat(res.totalTokens()).isEqualTo(987_654L);
@@ -252,7 +258,7 @@ class BadgeQueryServiceTest {
             when(tokenRepo.sumCacheTokens(GITHUB_ID)).thenReturn(List.of());
 
             // when
-            BadgeResponse res = service.query(USERNAME, GPU_NEEDS);
+            BadgeResponse res = service.query(USERNAME, BADGE_CODE, GPU_NEEDS);
 
             // then
             // 총 30개, from..today 오름차순으로 채워지고 마지막이 오늘
@@ -281,7 +287,7 @@ class BadgeQueryServiceTest {
             when(tokenRepo.sumCacheTokens(GITHUB_ID)).thenReturn(List.of());
 
             // when
-            BadgeResponse res = service.query(USERNAME, GPU_NEEDS);
+            BadgeResponse res = service.query(USERNAME, BADGE_CODE, GPU_NEEDS);
 
             // then
             assertThat(res.daily30d()).hasSize(30);
@@ -311,7 +317,7 @@ class BadgeQueryServiceTest {
             stubBaseWith(List.of());
 
             // when
-            BadgeResponse res = service.query(USERNAME, GPU_NEEDS);
+            BadgeResponse res = service.query(USERNAME, BADGE_CODE, GPU_NEEDS);
 
             // then
             assertThat(res.cacheHitRate()).isEqualTo(0.0);
@@ -324,7 +330,7 @@ class BadgeQueryServiceTest {
             stubBaseWith(List.of(cacheRow(null, 20L, 10L)));
 
             // when
-            BadgeResponse res = service.query(USERNAME, GPU_NEEDS);
+            BadgeResponse res = service.query(USERNAME, BADGE_CODE, GPU_NEEDS);
 
             // then
             assertThat(res.cacheHitRate()).isEqualTo(0.0);
@@ -338,7 +344,7 @@ class BadgeQueryServiceTest {
             stubBaseWith(List.of(cacheRow(0L, 0L, 0L)));
 
             // when
-            BadgeResponse res = service.query(USERNAME, GPU_NEEDS);
+            BadgeResponse res = service.query(USERNAME, BADGE_CODE, GPU_NEEDS);
 
             // then
             assertThat(res.cacheHitRate()).isEqualTo(0.0);
@@ -352,7 +358,7 @@ class BadgeQueryServiceTest {
             stubBaseWith(List.of(cacheRow(70L, 20L, 10L)));
 
             // when
-            BadgeResponse res = service.query(USERNAME, GPU_NEEDS);
+            BadgeResponse res = service.query(USERNAME, BADGE_CODE, GPU_NEEDS);
 
             // then
             assertThat(res.cacheHitRate()).isCloseTo(0.7, within(1e-9));
@@ -374,7 +380,7 @@ class BadgeQueryServiceTest {
                     .thenReturn(List.of());
 
             // when
-            service.query(USERNAME, EnumSet.of(
+            service.query(USERNAME, BADGE_CODE, EnumSet.of(
                     BadgeDataNeed.DAILY_1Y, BadgeDataNeed.STREAK_DAYS, BadgeDataNeed.YEAR_TOKENS));
 
             // then
@@ -399,7 +405,7 @@ class BadgeQueryServiceTest {
             when(tokenRepo.sumCacheTokens(GITHUB_ID)).thenReturn(List.of());
 
             // when
-            BadgeResponse res = service.query(USERNAME, GPU_NEEDS);
+            BadgeResponse res = service.query(USERNAME, BADGE_CODE, GPU_NEEDS);
 
             // then
             verify(tokenRepo).findDailyTotalsBetween(GITHUB_ID, today.minusDays(29), today);
@@ -419,7 +425,7 @@ class BadgeQueryServiceTest {
                     .thenReturn(List.of(todayRow));
 
             // when
-            BadgeResponse res = service.query(USERNAME, EnumSet.of(BadgeDataNeed.DAILY_1Y));
+            BadgeResponse res = service.query(USERNAME, BADGE_CODE, EnumSet.of(BadgeDataNeed.DAILY_1Y));
 
             // then
             // from=today-364 .. today = 365개, 오름차순으로 0-채움, 조회된 날짜만 값 유지
@@ -447,7 +453,7 @@ class BadgeQueryServiceTest {
                     .thenReturn(List.of(midRow, todayRow));
 
             // when
-            BadgeResponse res = service.query(USERNAME,
+            BadgeResponse res = service.query(USERNAME, BADGE_CODE,
                     EnumSet.of(BadgeDataNeed.DAILY_30D, BadgeDataNeed.DAILY_1Y));
 
             // then
@@ -483,7 +489,7 @@ class BadgeQueryServiceTest {
                     dailyRow(today.minusDays(2).toString(), 30L)));
 
             // when
-            BadgeResponse res = service.query(USERNAME, EnumSet.of(BadgeDataNeed.STREAK_DAYS));
+            BadgeResponse res = service.query(USERNAME, BADGE_CODE, EnumSet.of(BadgeDataNeed.STREAK_DAYS));
 
             // then
             assertThat(res.streakDays()).isEqualTo(3);
@@ -500,7 +506,7 @@ class BadgeQueryServiceTest {
                     dailyRow(today.minusDays(2).toString(), 30L)));
 
             // when
-            BadgeResponse res = service.query(USERNAME, EnumSet.of(BadgeDataNeed.STREAK_DAYS));
+            BadgeResponse res = service.query(USERNAME, BADGE_CODE, EnumSet.of(BadgeDataNeed.STREAK_DAYS));
 
             // then
             assertThat(res.streakDays()).isEqualTo(2);
@@ -517,7 +523,7 @@ class BadgeQueryServiceTest {
                     dailyRow(today.minusDays(3).toString(), 40L)));
 
             // when
-            BadgeResponse res = service.query(USERNAME, EnumSet.of(BadgeDataNeed.STREAK_DAYS));
+            BadgeResponse res = service.query(USERNAME, BADGE_CODE, EnumSet.of(BadgeDataNeed.STREAK_DAYS));
 
             // then
             assertThat(res.streakDays()).isEqualTo(2);
@@ -534,7 +540,7 @@ class BadgeQueryServiceTest {
                     dailyRow(today.minusDays(4).toString(), 50L)));
 
             // when
-            BadgeResponse res = service.query(USERNAME, EnumSet.of(BadgeDataNeed.STREAK_DAYS));
+            BadgeResponse res = service.query(USERNAME, BADGE_CODE, EnumSet.of(BadgeDataNeed.STREAK_DAYS));
 
             // then
             assertThat(res.streakDays()).isZero();
@@ -553,7 +559,7 @@ class BadgeQueryServiceTest {
                     dailyRow(today.minusDays(3).toString(), 30L)));
 
             // when
-            BadgeResponse res = service.query(USERNAME, EnumSet.of(BadgeDataNeed.STREAK_DAYS));
+            BadgeResponse res = service.query(USERNAME, BADGE_CODE, EnumSet.of(BadgeDataNeed.STREAK_DAYS));
 
             // then
             assertThat(res.streakDays()).isEqualTo(2);
@@ -567,7 +573,7 @@ class BadgeQueryServiceTest {
             stubYearRows(today, List.of());
 
             // when
-            BadgeResponse res = service.query(USERNAME, EnumSet.of(
+            BadgeResponse res = service.query(USERNAME, BADGE_CODE, EnumSet.of(
                     BadgeDataNeed.DAILY_1Y, BadgeDataNeed.STREAK_DAYS, BadgeDataNeed.YEAR_TOKENS));
 
             // then
@@ -575,6 +581,61 @@ class BadgeQueryServiceTest {
             assertThat(res.yearTokens()).isZero();
             assertThat(res.daily1y()).hasSize(365);
             assertThat(res.daily1y()).allSatisfy(d -> assertThat(d.total()).isZero());
+        }
+    }
+
+    @Nested
+    @DisplayName("query - 고정 스냅샷")
+    class Query_Snapshot {
+
+        @Test
+        @DisplayName("스냅샷_요구시_PK조회1회payload반환")
+        void 스냅샷_요구시_PK조회1회payload반환() {
+            // given
+            String payload = "{\"signupRank\":1}";
+            when(userRepo.findByUsername(USERNAME)).thenReturn(Optional.of(user()));
+            when(snapshotRepo.findPayload(GITHUB_ID, "beta-tester")).thenReturn(payload);
+
+            // when
+            BadgeResponse res = service.query(USERNAME, "beta-tester",
+                    EnumSet.of(BadgeDataNeed.BADGE_SNAPSHOT));
+
+            // then
+            // 스냅샷만 요구하면 토큰 집계 쿼리는 전혀 실행되지 않는다
+            assertThat(res.snapshot()).isEqualTo(payload);
+            verify(snapshotRepo).findPayload(GITHUB_ID, "beta-tester");
+            verifyNoInteractions(tokenRepo);
+        }
+
+        @Test
+        @DisplayName("스냅샷_미요구_조회안함")
+        void 스냅샷_미요구_조회안함() {
+            // given
+            // BADGE_SNAPSHOT을 요구하지 않는 테마의 경로 (경계)
+            when(userRepo.findByUsername(USERNAME)).thenReturn(Optional.of(user()));
+
+            // when
+            BadgeResponse res = service.query(USERNAME, BADGE_CODE, EnumSet.noneOf(BadgeDataNeed.class));
+
+            // then
+            assertThat(res.snapshot()).isEmpty();
+            verifyNoInteractions(snapshotRepo);
+        }
+
+        @Test
+        @DisplayName("스냅샷_행없음_빈문자열")
+        void 스냅샷_행없음_빈문자열() {
+            // given
+            // 자격은 있는데 스냅샷 적재가 누락된 사용자 (경계)
+            when(userRepo.findByUsername(USERNAME)).thenReturn(Optional.of(user()));
+            when(snapshotRepo.findPayload(GITHUB_ID, "beta-tester")).thenReturn(null);
+
+            // when
+            BadgeResponse res = service.query(USERNAME, "beta-tester",
+                    EnumSet.of(BadgeDataNeed.BADGE_SNAPSHOT));
+
+            // then
+            assertThat(res.snapshot()).isEmpty();
         }
     }
 }

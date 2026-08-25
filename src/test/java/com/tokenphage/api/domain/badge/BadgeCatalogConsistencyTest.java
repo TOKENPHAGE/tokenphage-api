@@ -3,6 +3,7 @@ package com.tokenphage.api.domain.badge;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.tokenphage.api.feature.badge.svg.BadgeTheme;
+import com.tokenphage.api.feature.badge.svg.theme.betatester.BetaTesterBadgeTheme;
 import com.tokenphage.api.feature.badge.svg.theme.card.claude.CardClaudeBadgeTheme;
 import com.tokenphage.api.feature.badge.svg.theme.card.gpu.CardGpuBadgeTheme;
 import com.tokenphage.api.feature.badge.svg.theme.grass.claude.GrassClaudeBadgeTheme;
@@ -20,14 +21,17 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 /**
- * 배지 코드가 enum · 테마 클래스 · DB 초기 데이터(V5) 세 곳에서 같은지 검증한다.
+ * 배지 코드가 enum · 테마 클래스 · DB 초기 데이터(마이그레이션 시드) 세 곳에서 같은지 검증한다.
  * <p>
  * 하나라도 빠뜨리면 예외 없이 잠금 배지만 나온다.
  * 서버 없이 확인 가능하므로 운영 코드가 아닌 테스트로 잡는다.
  */
 class BadgeCatalogConsistencyTest {
 
-    private static final String MIGRATION_PATH = "/db/migration/V5__create_badge_catalog_and_grant.sql";
+    /** badge_catalog 시드 INSERT를 담은 마이그레이션 목록. 새 배지의 시드 V파일을 여기에 추가한다. */
+    private static final List<String> MIGRATION_PATHS = List.of(
+            "/db/migration/V5__create_badge_catalog_and_grant.sql",
+            "/db/migration/V6__create_badge_snapshot.sql");
 
     /** INSERT 문 각 행에서 첫 번째 컬럼(code)만 뽑는다. 예: ('gpu', 'GPU Card', false, NULL) */
     private static final Pattern SEED_ROW = Pattern.compile("\\(\\s*'([a-z0-9-]+)'\\s*,");
@@ -41,19 +45,20 @@ class BadgeCatalogConsistencyTest {
                 new CardGpuBadgeTheme(),
                 new CardClaudeBadgeTheme(),
                 new GrassClaudeBadgeTheme(),
+                new BetaTesterBadgeTheme(),
                 new LockedBadgeTheme());
     }
 
     /**
-     * V5 마이그레이션에서 badge_catalog INSERT를 찾아 배지 코드를 파싱한다.
+     * 지정 마이그레이션에서 주석 줄을 제거한 본문을 읽는다.
      * <p>
      * 클래스패스 리소스라 클린 체크아웃·CI에서도 동작한다.
      * 주석 처리된 예시 INSERT를 세지 않도록 주석 줄을 먼저 제거한다.
      */
-    private String migrationWithoutComments() throws IOException {
-        try (InputStream in = getClass().getResourceAsStream(MIGRATION_PATH)) {
+    private String migrationWithoutComments(String path) throws IOException {
+        try (InputStream in = getClass().getResourceAsStream(path)) {
             assertThat(in)
-                    .as("마이그레이션 리소스를 찾을 수 없다: %s", MIGRATION_PATH)
+                    .as("마이그레이션 리소스를 찾을 수 없다: %s", path)
                     .isNotNull();
             String sql = new String(in.readAllBytes(), StandardCharsets.UTF_8);
             return sql.lines()
@@ -63,24 +68,32 @@ class BadgeCatalogConsistencyTest {
     }
 
     /**
-     * 시드 INSERT 블록(세미콜론까지)만 잘라낸다.
+     * 모든 마이그레이션의 badge_catalog 시드 INSERT 블록(세미콜론 전까지)을 병합한다.
      */
-    private String seedBlock() throws IOException {
-        String sql = migrationWithoutComments();
-        int insertAt = sql.indexOf("INSERT INTO badge_catalog");
-        assertThat(insertAt).as("badge_catalog 시드 INSERT를 찾을 수 없다").isNotNegative();
-
-        String block = sql.substring(insertAt);
-        int end = block.indexOf(';');
-        assertThat(end).as("시드 INSERT가 세미콜론으로 끝나지 않는다").isNotNegative();
-        return block.substring(0, end);
+    private String seedBlocks() throws IOException {
+        StringBuilder blocks = new StringBuilder();
+        for (String path : MIGRATION_PATHS) {
+            String sql = migrationWithoutComments(path);
+            int searchFrom = 0;
+            boolean found = false;
+            int insertAt;
+            while ((insertAt = sql.indexOf("INSERT INTO badge_catalog", searchFrom)) >= 0) {
+                int end = sql.indexOf(';', insertAt);
+                assertThat(end).as("시드 INSERT가 세미콜론으로 끝나지 않는다: %s", path).isNotNegative();
+                blocks.append(sql, insertAt, end).append('\n');
+                searchFrom = end;
+                found = true;
+            }
+            assertThat(found).as("badge_catalog 시드 INSERT를 찾을 수 없다: %s", path).isTrue();
+        }
+        return blocks.toString();
     }
 
     /**
      * DB 초기 데이터에 등록된 배지 코드 전부를 반환한다.
      */
     private Set<String> seedCodes() throws IOException {
-        Matcher matcher = SEED_ROW.matcher(seedBlock());
+        Matcher matcher = SEED_ROW.matcher(seedBlocks());
         return matcher.results()
                 .map(r -> r.group(1))
                 .collect(Collectors.toUnmodifiableSet());
@@ -92,7 +105,7 @@ class BadgeCatalogConsistencyTest {
     private boolean requireGrantOf(String code) throws IOException {
         Pattern row = Pattern.compile(
                 "\\(\\s*'" + Pattern.quote(code) + "'\\s*,[^,]+,\\s*(true|false)\\s*,");
-        Matcher matcher = row.matcher(seedBlock());
+        Matcher matcher = row.matcher(seedBlocks());
         assertThat(matcher.find()).as("초기 데이터에서 %s 행을 찾을 수 없다", code).isTrue();
         return Boolean.parseBoolean(matcher.group(1));
     }
@@ -194,6 +207,26 @@ class BadgeCatalogConsistencyTest {
             // then
             assertThat(seeded).contains(lockedCode);
             assertThat(requireGrantOf(lockedCode)).isFalse();
+        }
+    }
+
+    @Nested
+    @DisplayName("자격 배지가 갖춰야 할 조건")
+    class GrantBadgeTest {
+
+        @Test
+        @DisplayName("자격배지_betaTester_자격을요구함")
+        void 자격배지_betaTester_자격을요구함() throws IOException {
+            // given
+            // 베타 테스터 배지는 운영자 부여 전용이다. 공개로 풀리면 스냅샷 없는 배지가 노출된다.
+            String code = BadgeCode.BETA_TESTER.getCode();
+
+            // when
+            Set<String> seeded = seedCodes();
+
+            // then
+            assertThat(seeded).contains(code);
+            assertThat(requireGrantOf(code)).isTrue();
         }
     }
 }

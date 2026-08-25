@@ -3,9 +3,11 @@ package com.tokenphage.api.feature.badge.svg;
 import com.tokenphage.api.feature.badge.dto.response.BadgeResponse;
 import com.tokenphage.api.feature.badge.dto.response.DailyCountResponse;
 import com.tokenphage.api.feature.badge.dto.response.ModelCountResponse;
+import com.tokenphage.api.feature.badge.svg.theme.betatester.BetaTesterBadgeTheme;
 import com.tokenphage.api.feature.badge.svg.theme.card.claude.CardClaudeBadgeTheme;
 import com.tokenphage.api.feature.badge.svg.theme.card.gpu.CardGpuBadgeTheme;
 import com.tokenphage.api.feature.badge.svg.theme.grass.claude.GrassClaudeBadgeTheme;
+import com.tokenphage.api.feature.badge.svg.theme.locked.LockedBadgeTheme;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -25,10 +27,11 @@ class SvgBuilderTest {
 
     @BeforeEach
     void setUp() {
-        // gpu + claude + grass-claude 테마를 등록 (실제 @Component 빈 주입과 동일한 구성)
-        // grass-claude 미등록 시 normalizeTheme이 gpu로 폴백해 신규 케이스가 공허 통과하므로 반드시 포함한다.
+        // 등록 테마 5종 전부 (실제 @Component 빈 주입과 동일한 구성)
+        // 미등록 시 normalizeTheme·resolveMode가 gpu로 폴백해 신규 케이스가 공허 통과하므로 반드시 포함한다.
         svgBuilder = new SvgBuilder(List.of(
-                new CardGpuBadgeTheme(), new CardClaudeBadgeTheme(), new GrassClaudeBadgeTheme()));
+                new CardGpuBadgeTheme(), new CardClaudeBadgeTheme(), new GrassClaudeBadgeTheme(),
+                new BetaTesterBadgeTheme(), new LockedBadgeTheme()));
     }
 
     private BadgeResponse sampleData() {
@@ -46,7 +49,7 @@ class SvgBuilderTest {
             new ModelCountResponse("claude-sonnet-4-6", 1_200_000),
             new ModelCountResponse("claude-opus-4-7",     450_000)
         );
-        return new BadgeResponse("leeyoungseok", 15_430_000L, daily30d, topModels, 0.87, 0L, 0, List.of());
+        return new BadgeResponse("leeyoungseok", 15_430_000L, daily30d, topModels, 0.87, 0L, 0, List.of(), "");
     }
 
     private static int count(String text, String token) {
@@ -69,7 +72,9 @@ class SvgBuilderTest {
         @ParameterizedTest(name = "theme={0}, mode={1} → 저장소 링크 <a> 앵커 1개")
         @DisplayName("모든 테마·모드의 뱃지는 저장소 URL <a> 앵커로 정확히 한 번 감싸진다")
         @CsvSource({ "gpu, light", "gpu, dark", "claude, light", "claude, dark",
-                     "grass-claude, light", "grass-claude, dark" })
+                     "grass-claude, light", "grass-claude, dark",
+                     "beta-tester, cyan", "beta-tester, green", "beta-tester, purple",
+                     "locked, light" })
         void badge_모든테마모드_저장소앵커로감쌈(String theme, String mode) {
             // given / when
             String svg = svgBuilder.build(sampleData(), theme, mode);
@@ -111,7 +116,7 @@ class SvgBuilderTest {
         }
     }
 
-    @Nested @DisplayName("normalizeTheme / normalizeMode (캐시 키 정규화)")
+    @Nested @DisplayName("normalizeTheme / resolveMode (캐시 키 정규화)")
     class Normalize {
 
         @Test @DisplayName("등록된 테마 → 소문자 식별자 그대로 반환")
@@ -139,14 +144,25 @@ class SvgBuilderTest {
             assertThat(svgBuilder.normalizeTheme(null)).isEqualTo("gpu");
         }
 
-        @ParameterizedTest(name = "mode=\"{0}\" → \"{1}\"")
-        @DisplayName("dark는 대소문자 무관하게 dark, 그 외/null은 light")
+        @ParameterizedTest(name = "theme={0}, mode=\"{1}\" → {2}")
+        @DisplayName("resolveMode는 테마별 지원 집합으로 정규화한다")
         @CsvSource(value = {
-            "dark, dark", "DARK, dark", "Dark, dark",
-            "light, light", "garbage, light", "'', light", "NULL, light"
+            "gpu, dark, DARK", "gpu, DARK, DARK", "gpu, Dark, DARK",
+            "gpu, light, LIGHT", "gpu, garbage, LIGHT", "gpu, '', LIGHT", "gpu, NULL, LIGHT",
+            "gpu, cyan, LIGHT",
+            "beta-tester, cyan, CYAN", "beta-tester, green, GREEN", "beta-tester, PURPLE, PURPLE",
+            "beta-tester, light, CYAN", "beta-tester, dark, CYAN", "beta-tester, NULL, CYAN"
         }, nullValues = "NULL")
-        void normalizeMode_정규화(String input, String expected) {
-            assertThat(svgBuilder.normalizeMode(input)).isEqualTo(expected);
+        void resolveMode_테마별정규화(String theme, String input, BadgeMode expected) {
+            // 카드 테마는 악센트 3색 미지원 → LIGHT, beta-tester는 light/dark 미지원 → CYAN 폴백
+            assertThat(svgBuilder.resolveMode(theme, input)).isEqualTo(expected);
+        }
+
+        @Test @DisplayName("resolveMode_미등록테마_기본테마기준정규화")
+        void resolveMode_미등록테마_기본테마기준정규화() {
+            // 미등록 theme은 normalizeTheme과 같은 폴백(gpu) 기준으로 모드를 정한다
+            assertThat(svgBuilder.resolveMode("zzz999", "dark")).isEqualTo(BadgeMode.DARK);
+            assertThat(svgBuilder.resolveMode("zzz999", "green")).isEqualTo(BadgeMode.LIGHT);
         }
     }
 

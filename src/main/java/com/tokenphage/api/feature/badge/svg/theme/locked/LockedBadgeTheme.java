@@ -3,11 +3,13 @@ package com.tokenphage.api.feature.badge.svg.theme.locked;
 import com.tokenphage.api.domain.badge.BadgeCode;
 import com.tokenphage.api.feature.badge.dto.response.BadgeResponse;
 import com.tokenphage.api.feature.badge.svg.BadgeDataNeed;
+import com.tokenphage.api.feature.badge.svg.BadgeMode;
 import com.tokenphage.api.feature.badge.svg.BadgeTheme;
 import com.tokenphage.api.feature.badge.svg.SvgText;
 import com.tokenphage.api.feature.badge.svg.theme.card.CardColors;
 import org.springframework.stereotype.Component;
 
+import java.util.EnumSet;
 import java.util.Set;
 
 /**
@@ -48,18 +50,40 @@ public class LockedBadgeTheme implements BadgeTheme {
     }
 
     /**
+     * 지원 색상 모드를 선언한다.
+     *
+     * @return LIGHT·DARK
+     * @Since 2026-08-23
+     */
+    @Override
+    public Set<BadgeMode> supportedModes() {
+        return EnumSet.of(BadgeMode.LIGHT, BadgeMode.DARK);
+    }
+
+    /**
+     * 기본 색상 모드를 반환한다.
+     *
+     * @return LIGHT
+     * @Since 2026-08-23
+     */
+    @Override
+    public BadgeMode defaultMode() {
+        return BadgeMode.LIGHT;
+    }
+
+    /**
      * 기본 안내 문구로 그린다.
      * <p>
      * ?theme=locked 직접 호출 경로. 자격 거부 시에는 {@link #render}가 배지별 문구를 받아 그린다.
      *
-     * @param data   쓰지 않는다
-     * @param isDark true면 다크 모드
+     * @param data 쓰지 않는다
+     * @param mode 색상 모드 (DARK 외에는 라이트로 그린다)
      * @return 기본 문구 잠금 안내 SVG
      * @Since 2026-08-10
      */
     @Override
-    public String build(BadgeResponse data, boolean isDark) {
-        return render(DEFAULT_TITLE, DEFAULT_MESSAGE, isDark);
+    public String build(BadgeResponse data, BadgeMode mode) {
+        return render(DEFAULT_TITLE, DEFAULT_MESSAGE, mode == BadgeMode.DARK);
     }
 
     /**

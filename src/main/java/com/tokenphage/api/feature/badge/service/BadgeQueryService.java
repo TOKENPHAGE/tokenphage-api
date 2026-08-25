@@ -1,5 +1,6 @@
 package com.tokenphage.api.feature.badge.service;
 
+import com.tokenphage.api.domain.badge.repository.BadgeSnapshotRepository;
 import com.tokenphage.api.domain.token.repository.DailyTokenUsageRepository;
 import com.tokenphage.api.domain.token.repository.projection.CacheTokenSum;
 import com.tokenphage.api.domain.user.repository.UserRepository;
@@ -30,6 +31,7 @@ class BadgeQueryService {
 
     private final UserRepository userRepo;
     private final DailyTokenUsageRepository tokenRepo;
+    private final BadgeSnapshotRepository snapshotRepo;
 
     @Value("${badge.timezone}")
     private String timezone;
@@ -41,14 +43,15 @@ class BadgeQueryService {
      * 일별 쿼리는 연간 계열(DAILY_1Y/STREAK_DAYS/YEAR_TOKENS) 또는 DAILY_30D 요구 시에만
      * 최대 범위(연간 요구 시 365일, 아니면 30일)로 1회 조회한 뒤 히트바·연간일별·연간총량·streak을 파생한다.
      *
-     * @param username 배지를 조회할 GitHub 사용자명 (null 불허)
-     * @param needs    테마가 요구하는 데이터 종류 집합 (null 불허)
+     * @param username  배지를 조회할 GitHub 사용자명 (null 불허)
+     * @param badgeCode 정규화된 배지 코드 (null 불허) — 스냅샷 복합키의 절반
+     * @param needs     테마가 요구하는 데이터 종류 집합 (null 불허)
      * @return 배지 렌더링에 필요한 집계 데이터 (미요구 필드는 빈값)
      * @throws AppException 사용자가 존재하지 않을 경우 (BADGE_001)
      * @Since 2026-07-15
      */
-    BadgeResponse query(String username, Set<BadgeDataNeed> needs) {
-        log.debug("Querying badge data: username={}, needs={}", username, needs);
+    BadgeResponse query(String username, String badgeCode, Set<BadgeDataNeed> needs) {
+        log.debug("Querying badge data: username={}, badgeCode={}, needs={}", username, badgeCode, needs);
 
         // #1. 사용자 조회
         User user = userRepo.findByUsername(username)
@@ -112,7 +115,18 @@ class BadgeQueryService {
             cacheHitRate = calcCacheHitRate(cacheRows.isEmpty() ? null : cacheRows.getFirst());
         }
 
-        // #11. 조회된 데이터를 BadgeResponse로 조립하여 반환
+        // #11. 고정 스냅샷: 요구 시 복합 PK로 1회 조회. 행이 없으면 빈 문자열 (적재 누락 신호)
+        String snapshot = "";
+        if (needs.contains(BadgeDataNeed.BADGE_SNAPSHOT)) {
+            String payload = snapshotRepo.findPayload(githubId, badgeCode);
+            if (payload == null) {
+                log.warn("Badge snapshot missing: username={}, badgeCode={}", username, badgeCode);
+            } else {
+                snapshot = payload;
+            }
+        }
+
+        // #12. 조회된 데이터를 BadgeResponse로 조립하여 반환
         log.debug("Badge data ready: username={}, totalTokens={}, heatbarDays={}, yearDays={}, streakDays={}",
                 username, totalTokens, heat30bar.size(), daily1y.size(), streakDays);
         return new BadgeResponse(
@@ -123,7 +137,8 @@ class BadgeQueryService {
                 cacheHitRate,
                 yearTokens,
                 streakDays,
-                daily1y
+                daily1y,
+                snapshot
         );
     }
 

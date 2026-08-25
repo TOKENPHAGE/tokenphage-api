@@ -3,6 +3,7 @@ package com.tokenphage.api.feature.badge.svg.theme.grass;
 import com.tokenphage.api.feature.badge.dto.response.BadgeResponse;
 import com.tokenphage.api.feature.badge.dto.response.DailyCountResponse;
 import com.tokenphage.api.feature.badge.svg.BadgeDataNeed;
+import com.tokenphage.api.feature.badge.svg.BadgeMode;
 import com.tokenphage.api.feature.badge.svg.BadgeTheme;
 import com.tokenphage.api.feature.badge.svg.SvgText;
 import lombok.extern.slf4j.Slf4j;
@@ -428,17 +429,42 @@ public abstract class GrassBadgeTheme implements BadgeTheme {
     private static final String FLICKER_DUR = "0.9s";
 
     /**
-     * 공통 잔디 레이아웃에 테마별 마스코트·팔레트를 끼워 완성된 뱃지 SVG를 생성한다.
+     * 지원 색상 모드를 선언한다.
      *
-     * @param data   배지에 표시할 사용자 데이터 (null 불허)
-     * @param isDark true면 다크 모드, false면 라이트 모드
+     * @return LIGHT·DARK
+     * @Since 2026-08-23
+     */
+    @Override
+    public final Set<BadgeMode> supportedModes() {
+        return EnumSet.of(BadgeMode.LIGHT, BadgeMode.DARK);
+    }
+
+    /**
+     * 기본 색상 모드를 반환한다.
+     *
+     * @return LIGHT
+     * @Since 2026-08-23
+     */
+    @Override
+    public final BadgeMode defaultMode() {
+        return BadgeMode.LIGHT;
+    }
+
+    /**
+     * 공통 잔디 레이아웃에 테마별 마스코트·팔레트를 끼워 완성된 뱃지 SVG를 생성한다.
+     * <p>
+     * 패밀리 내부 훅은 boolean isDark 계약을 유지한다 — 모드 공간이 두 개뿐이라 정확하다.
+     *
+     * @param data 배지에 표시할 사용자 데이터 (null 불허)
+     * @param mode 색상 모드 (DARK 외에는 라이트로 그린다)
      * @return 완성된 SVG 마크업 문자열
      * @Since 2026-07-15
      */
     @Override
-    public final String build(BadgeResponse data, boolean isDark) {
+    public final String build(BadgeResponse data, BadgeMode mode) {
+        boolean isDark = mode == BadgeMode.DARK;
         GrassColors c = colors(isDark);
-        String mode = isDark ? "dark" : "light";
+        String modeKey = mode.getCode();
         log.debug("Building grass badge: user={}, theme={}, isDark={}", data.username(), name(), isDark);
 
         StringBuilder sb = new StringBuilder();
@@ -457,7 +483,7 @@ public abstract class GrassBadgeTheme implements BadgeTheme {
                 """.formatted(c.bg(), c.border()));
 
         appendHeader(sb, data, c);
-        appendSky(sb, data, isDark, mode, c);
+        appendSky(sb, data, isDark, modeKey, c);
         sb.append("""
                 <line x1="53" y1="70" x2="677" y2="70" stroke="%s"/>
                 """.formatted(c.divider()));
