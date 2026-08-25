@@ -3,6 +3,7 @@ package com.tokenphage.api.feature.badge.svg.theme.grass.claude;
 import com.tokenphage.api.feature.badge.dto.response.BadgeResponse;
 import com.tokenphage.api.feature.badge.dto.response.DailyCountResponse;
 import com.tokenphage.api.feature.badge.svg.BadgeDataNeed;
+import com.tokenphage.api.feature.badge.svg.BadgeMode;
 import com.tokenphage.api.feature.badge.svg.SvgText;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -54,7 +55,7 @@ class GrassClaudeBadgeThemeTest {
             // given
             BadgeResponse data = sampleData(42, 2_543_891L);
             // when
-            String svg = theme.build(data, false);
+            String svg = theme.build(data, BadgeMode.LIGHT);
             // then: 루트는 CardBadgeTheme 미러링(xmlns:xlink 포함 — camo XML 파싱 필수)
             assertThat(svg)
                     .contains("width=\"700\" height=\"190\"")
@@ -70,7 +71,7 @@ class GrassClaudeBadgeThemeTest {
             // given
             BadgeResponse data = sampleData(0, 0L);
             // when
-            String svg = theme.build(data, false);
+            String svg = theme.build(data, BadgeMode.LIGHT);
             // then: 51주*7 + (수요일 4개) = 361셀, 오늘 이후 셀 미렌더
             assertThat(countOccurrences(svg, "rx=\"2.5\"")).isEqualTo(EXPECTED_CELLS);
         }
@@ -81,7 +82,7 @@ class GrassClaudeBadgeThemeTest {
             // given: 오늘(수)만 사용량 존재
             BadgeResponse data = sampleData(1, 100L, Map.of(TODAY, 100L));
             // when
-            String svg = theme.build(data, false);
+            String svg = theme.build(data, BadgeMode.LIGHT);
             // then: 오늘 셀 = 마지막 열(x=53+51*12=665), 수요일 행(y=88+3*12=124), 최고 레벨 색
             assertThat(svg).contains("<rect x=\"665\" y=\"124\" width=\"9\" height=\"9\" rx=\"2.5\" fill=\"#8a3a1f\"/>");
         }
@@ -92,7 +93,7 @@ class GrassClaudeBadgeThemeTest {
             // given
             BadgeResponse data = sampleData(0, 0L);
             // when
-            String svg = theme.build(data, false);
+            String svg = theme.build(data, BadgeMode.LIGHT);
             // then: 요일 라벨 3종 + 월 라벨(창 내 Aug 확정 포함)
             assertThat(svg)
                     .contains(">Mon<").contains(">Wed<").contains(">Fri<")
@@ -112,7 +113,7 @@ class GrassClaudeBadgeThemeTest {
                     TODAY, 100L, TODAY.minusDays(1), 70L, TODAY.minusDays(2), 50L,
                     TODAY.minusDays(3), 30L, TODAY.minusDays(4), 10L));
             // when
-            String svg = theme.build(data, false);
+            String svg = theme.build(data, BadgeMode.LIGHT);
             // then
             assertThat(svg)
                     .contains("#f6c9a8").contains("#ec9463").contains("#D97757")
@@ -127,7 +128,7 @@ class GrassClaudeBadgeThemeTest {
                     TODAY, 100L, TODAY.minusDays(1), 70L, TODAY.minusDays(2), 50L,
                     TODAY.minusDays(3), 30L, TODAY.minusDays(4), 10L));
             // when
-            String svg = theme.build(data, true);
+            String svg = theme.build(data, BadgeMode.DARK);
             // then: 추출 스크립트가 좌표 매핑으로 확정한 dark 5단계 + empty
             assertThat(svg)
                     .contains("#5a2f1e").contains("#c05a30")
@@ -140,7 +141,7 @@ class GrassClaudeBadgeThemeTest {
             // given: 신규 유저 — 365일 전부 0
             BadgeResponse data = sampleData(0, 0L);
             // when
-            String svg = theme.build(data, false);
+            String svg = theme.build(data, BadgeMode.LIGHT);
             // then: 모든 셀이 empty 색, 레벨 색 미등장 (light 장식/마스코트와 hex 비충돌 확인됨)
             assertThat(countOccurrences(svg, "fill=\"#e9e4db\"")).isEqualTo(EXPECTED_CELLS);
             assertThat(svg).doesNotContain("#f6c9a8").doesNotContain("#ec9463")
@@ -158,7 +159,7 @@ class GrassClaudeBadgeThemeTest {
             // given
             BadgeResponse data = sampleData(42, 2_543_891L);
             // when
-            String svg = theme.build(data, false);
+            String svg = theme.build(data, BadgeMode.LIGHT);
             // then: 녹색 streak 텍스트
             assertThat(svg).contains(">42-day</text>").contains("#2ea043");
         }
@@ -169,7 +170,7 @@ class GrassClaudeBadgeThemeTest {
             // given
             BadgeResponse data = sampleData(42, 2_543_891L);
             // when
-            String svg = theme.build(data, false);
+            String svg = theme.build(data, BadgeMode.LIGHT);
             // then: 픽셀 숫자 그룹의 aria-label로 값 접근 가능(숫자는 rect로 그려짐)
             assertThat(svg).contains("aria-label=\"2,543,891 tokens/year\"");
         }
@@ -178,8 +179,8 @@ class GrassClaudeBadgeThemeTest {
         @DisplayName("잔디뱃지_연간토큰_픽셀숫자_큰수배율축소")
         void 잔디뱃지_연간토큰_픽셀숫자_큰수배율축소() {
             // given // when: 작은 수는 최대 배율(4.2px), 아주 큰 수(1조)는 축소되어 하늘 영역 침범 방지
-            String small = theme.build(sampleData(1, 1_000L), false);
-            String huge = theme.build(sampleData(1, 1_000_000_000_000L), false);
+            String small = theme.build(sampleData(1, 1_000L), BadgeMode.LIGHT);
+            String huge = theme.build(sampleData(1, 1_000_000_000_000L), BadgeMode.LIGHT);
             // then: 값은 aria-label로 접근 가능, 큰 수는 픽셀 칸이 최대 배율보다 작다
             assertThat(small).contains("aria-label=\"1,000 tokens/year\"").contains("width=\"4.20\"");
             assertThat(huge).contains("aria-label=\"1,000,000,000,000 tokens/year\"")
@@ -192,7 +193,7 @@ class GrassClaudeBadgeThemeTest {
             // given: streak >= 1 — 주황 불꽃 + 깜빡임
             BadgeResponse data = sampleData(42, 100L);
             // when
-            String svg = theme.build(data, false);
+            String svg = theme.build(data, BadgeMode.LIGHT);
             // then: 불꽃 고유색(#ff3d00)은 light에서 불꽃에만 존재
             assertThat(svg)
                     .contains("attributeName=\"opacity\"")
@@ -205,7 +206,7 @@ class GrassClaudeBadgeThemeTest {
             // given: 신규 유저 — 회색 불꽃, 깜빡임 없음 (결정 5)
             BadgeResponse data = sampleData(0, 0L);
             // when
-            String svg = theme.build(data, false);
+            String svg = theme.build(data, BadgeMode.LIGHT);
             // then
             assertThat(svg)
                     .contains(">0-day</text>")
@@ -220,7 +221,7 @@ class GrassClaudeBadgeThemeTest {
             // given
             BadgeResponse data = sampleData("a<script>", 1, 100L, Map.of(TODAY, 100L));
             // when
-            String svg = theme.build(data, false);
+            String svg = theme.build(data, BadgeMode.LIGHT);
             // then: XSS 방지
             assertThat(svg).contains("@a&lt;script&gt;").doesNotContain("<script>");
         }
@@ -232,7 +233,7 @@ class GrassClaudeBadgeThemeTest {
             String longName = "a".repeat(39);
             BadgeResponse data = sampleData(longName, 1, 100L, Map.of(TODAY, 100L));
             // when
-            String svg = theme.build(data, false);
+            String svg = theme.build(data, BadgeMode.LIGHT);
             // then: 15자 표시(14자 + 말줄임표)
             assertThat(svg)
                     .contains("@" + "a".repeat(14) + "…")
@@ -250,7 +251,7 @@ class GrassClaudeBadgeThemeTest {
             // given
             BadgeResponse data = sampleData(42, 100L);
             // when
-            String svg = theme.build(data, false);
+            String svg = theme.build(data, BadgeMode.LIGHT);
             // then: 걷기 translate + 방향 flip scale + 픽셀 스프라이트
             assertThat(svg)
                     .contains("type=\"translate\"")
@@ -278,7 +279,7 @@ class GrassClaudeBadgeThemeTest {
             daily1y.add(new DailyCountResponse(date.toString(), usage.getOrDefault(date, 0L)));
         }
         return new BadgeResponse(username, 0L, List.of(), List.of(), 0.0,
-                yearTokens, streakDays, daily1y);
+                yearTokens, streakDays, daily1y, "");
     }
 
     private static int countOccurrences(String text, String token) {

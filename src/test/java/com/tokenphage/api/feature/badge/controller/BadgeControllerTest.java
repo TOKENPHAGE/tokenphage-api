@@ -158,6 +158,24 @@ class BadgeControllerTest {
             // then
             verify(badgeRenderService).getSvg(USERNAME, "grass-claude", "dark");
         }
+
+        @Test
+        @DisplayName("배지조회_악센트모드지정_그값으로서비스호출")
+        void 배지조회_악센트모드지정_그값으로서비스호출() throws Exception {
+            // given
+            // 컨트롤러는 mode를 해석하지 않는다 — 악센트 값도 원문 그대로 서비스에 넘긴다.
+            given(badgeRenderService.getSvg(anyString(), anyString(), anyString()))
+                    .willReturn(new BadgeSvgResponse(SVG, true));
+
+            // when
+            mockMvc.perform(get("/badge/{username}", USERNAME)
+                            .param("theme", "beta-tester")
+                            .param("mode", "green"))
+                    .andExpect(status().isOk());
+
+            // then
+            verify(badgeRenderService).getSvg(USERNAME, "beta-tester", "green");
+        }
     }
 
     @Nested

@@ -24,7 +24,8 @@ public class BadgeController {
      * @param request  결과 값을 실어 보낼 현재 요청
      * @param username 배지를 조회할 GitHub 사용자명
      * @param theme    배지 스킨 종류 (예: "gpu", 기본값: "gpu")
-     * @param mode     색상 모드 ("light" 또는 "dark", 기본값: "light")
+     * @param mode     색상 모드 — 지원 값은 테마별로 다르다 (카드·잔디 "light"/"dark",
+     *                 beta-tester "cyan"/"green"/"purple"). 미지원 값은 테마 기본 모드로 정규화 (기본값: "light")
      * @return SVG 형식의 배지 이미지
      * @Since 2026-05-27
      */

@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.tokenphage.api.domain.badge.BadgeCode;
 import com.tokenphage.api.feature.badge.dto.response.BadgeResponse;
 import com.tokenphage.api.feature.badge.svg.BadgeDataNeed;
+import com.tokenphage.api.feature.badge.svg.BadgeMode;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
@@ -24,7 +25,7 @@ class LockedBadgeThemeTest {
 
     /** 잠금 배지는 데이터를 그리지 않지만 메서드 시그니처상 필요한 빈 데이터. */
     private BadgeResponse emptyData() {
-        return new BadgeResponse("example-user", 0L, List.of(), List.of(), 0.0, 0L, 0, List.of());
+        return new BadgeResponse("example-user", 0L, List.of(), List.of(), 0.0, 0L, 0, List.of(), "");
     }
 
     @Nested
@@ -112,7 +113,7 @@ class LockedBadgeThemeTest {
             // ?theme=locked 직접 호출 경로. 어떤 배지 때문인지 알 수 없어 기본 문구를 쓴다.
 
             // when
-            String svg = sut.build(emptyData(), false);
+            String svg = sut.build(emptyData(), BadgeMode.LIGHT);
 
             // then
             assertThat(svg).contains(LockedBadgeTheme.DEFAULT_TITLE);
