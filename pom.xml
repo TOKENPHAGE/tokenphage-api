@@ -10,7 +10,7 @@
     </parent>
     <groupId>com.tokenphage</groupId>
     <artifactId>tokenphage-api</artifactId>
-    <version>26.08.12</version>
+    <version>26.08.26</version>
     <name>tokenphage-api</name>
     <description/>
     <url/>
