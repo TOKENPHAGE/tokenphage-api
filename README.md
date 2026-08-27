@@ -37,9 +37,20 @@ GitHub 잔디가 당신의 커밋을 보여주듯, **TokenPhage**는 Claude Code
       <code>[![Tokenphage](https://api.tokenphage.com/badge/&lt;your-github-name&gt;?theme=claude&amp;mode=light)](https://github.com/TOKENPHAGE)</code>
     </td>
   </tr>
+  <tr>
+    <td align="center" colspan="2"><strong>grass-claude · light</strong></td>
+  </tr>
+  <tr>
+    <td align="center" colspan="2">
+      <a href="https://github.com/TOKENPHAGE"><img src="https://api.tokenphage.com/badge/kobenlys?theme=grass-claude" alt="TokenPhage grass-claude light 배지"></a><br/>
+      <code>[![Tokenphage](https://api.tokenphage.com/badge/&lt;your-github-name&gt;?theme=grass-claude)](https://github.com/TOKENPHAGE)</code>
+    </td>
+  </tr>
 </table>
 
 </div>
+
+> 🎫 **그 외 다양한 배지**(베타 테스터 배지 · 마스코트 레벨 · 색상 모드)를 보고 싶다면 → **[배지 카탈로그(BADGES.md)](BADGES.md)**
 
 ### 🎫 배지 한 장에 담기는 정보
 
@@ -88,82 +99,15 @@ tokenphage
 
 ## 🎨 테마 & 레벨
 
-배지는 쿼리 파라미터로 외형(테마·색상 모드)을 바꿀 수 있고, 어떤 테마든 **누적 토큰이 쌓일수록 마스코트가 Lv.1 → Lv.5로 진화**합니다.
+배지는 쿼리 파라미터로 외형(테마·색상)을 바꿀 수 있습니다. **테마마다 담기는 정보와 표현 방식이 다르며**(마스코트 진화 · 잔디 그리드 등), 새 테마는 계속 추가됩니다.
 
 ```markdown
 [![Tokenphage](https://api.tokenphage.com/badge/<your-github-name>?theme=claude&mode=dark)](https://github.com/TOKENPHAGE)
 ```
 
-| 파라미터    | 값                                  | 기본값     | 설명                          |
-|---------|------------------------------------|---------|-----------------------------|
-| `theme` | `gpu` · `claude` · `grass-claude`  | `gpu`   | 배지 스킨 (마스코트·레이아웃·색 팔레트가 달라짐) |
-| `mode`  | `light` · `dark`                   | `light` | 색상 모드                       |
-
-> 🚀 현재 테마는 **3종(`gpu` · `claude` · `grass-claude`)** 입니다. 앞으로 더 다양한 테마를 계속 추가 릴리즈할 예정이에요 — 다음 업데이트를 기대해 주세요!
-
-#### 🖥️ GPU 테마 (기본)
-
-코어(팬) 가속 · 과열 글로우 · 색 변화(녹→빨) · Lv.4~5 전기 스파크로 진화합니다.
-
-<table>
-<tr>
-<td align="center"><img src="https://cdn.jsdelivr.net/gh/TOKENPHAGE/tokenphage-assets@main/mascot/gpu-lv1.svg" width="120"/></td>
-<td align="center"><img src="https://cdn.jsdelivr.net/gh/TOKENPHAGE/tokenphage-assets@main/mascot/gpu-lv2.svg" width="120"/></td>
-<td align="center"><img src="https://cdn.jsdelivr.net/gh/TOKENPHAGE/tokenphage-assets@main/mascot/gpu-lv3.svg" width="120"/></td>
-<td align="center"><img src="https://cdn.jsdelivr.net/gh/TOKENPHAGE/tokenphage-assets@main/mascot/gpu-lv4.svg" width="120"/></td>
-<td align="center"><img src="https://cdn.jsdelivr.net/gh/TOKENPHAGE/tokenphage-assets@main/mascot/gpu-lv5.svg" width="120"/></td>
-</tr>
-<tr>
-<td align="center"><b>Lv.1</b><br/><sub><code>&lt; 10M</code></sub></td>
-<td align="center"><b>Lv.2</b><br/><sub><code>&lt; 100M</code></sub></td>
-<td align="center"><b>Lv.3</b><br/><sub><code>&lt; 500M</code></sub></td>
-<td align="center"><b>Lv.4</b><br/><sub><code>&lt; 1B</code></sub></td>
-<td align="center"><b>Lv.5</b><br/><sub><code>&ge; 1B</code></sub></td>
-</tr>
-</table>
-
-#### 👾 Claude 테마
-
-글로우가 강해지고, 최고 레벨에선 몸 색이 빨갛게 변합니다.
-
-<table>
-<tr>
-<td align="center"><img src="https://cdn.jsdelivr.net/gh/TOKENPHAGE/tokenphage-assets@main/mascot/claude-lv1.svg" width="120"/></td>
-<td align="center"><img src="https://cdn.jsdelivr.net/gh/TOKENPHAGE/tokenphage-assets@main/mascot/claude-lv2.svg" width="120"/></td>
-<td align="center"><img src="https://cdn.jsdelivr.net/gh/TOKENPHAGE/tokenphage-assets@main/mascot/claude-lv3.svg" width="120"/></td>
-<td align="center"><img src="https://cdn.jsdelivr.net/gh/TOKENPHAGE/tokenphage-assets@main/mascot/claude-lv4.svg" width="120"/></td>
-<td align="center"><img src="https://cdn.jsdelivr.net/gh/TOKENPHAGE/tokenphage-assets@main/mascot/claude-lv5.svg" width="120"/></td>
-</tr>
-<tr>
-<td align="center"><b>Lv.1</b><br/><sub><code>&lt; 10M</code></sub></td>
-<td align="center"><b>Lv.2</b><br/><sub><code>&lt; 100M</code></sub></td>
-<td align="center"><b>Lv.3</b><br/><sub><code>&lt; 500M</code></sub></td>
-<td align="center"><b>Lv.4</b><br/><sub><code>&lt; 1B</code></sub></td>
-<td align="center"><b>Lv.5</b><br/><sub><code>&ge; 1B</code></sub></td>
-</tr>
-</table>
-
-#### 🌱 Grass 테마
-
-<a href="https://github.com/TOKENPHAGE"><img src="https://api.tokenphage.com/badge/kobenlys?theme=grass-claude" alt="TokenPhage grass-claude light 배지"></a>
-
-`[![Tokenphage](https://api.tokenphage.com/badge/<your-github-name>?theme=grass-claude)](https://github.com/TOKENPHAGE)`
-
-<a href="https://github.com/TOKENPHAGE"><img src="https://api.tokenphage.com/badge/kobenlys?theme=grass-claude&amp;mode=dark" alt="TokenPhage grass-claude dark 배지"></a>
-
-`[![Tokenphage](https://api.tokenphage.com/badge/<your-github-name>?theme=grass-claude&mode=dark)](https://github.com/TOKENPHAGE)`
-
-#### 🌗 색상 모드
-
-<table>
-<tr>
-<td align="center"><img src="https://api.tokenphage.com/badge/kobenlys?mode=light" width="300"/><br/><sub><code>[![Tokenphage](https://api.tokenphage.com/badge/&lt;your-github-name&gt;?mode=light)](https://github.com/TOKENPHAGE)</code></sub></td>
-<td align="center"><img src="https://api.tokenphage.com/badge/kobenlys?mode=dark" width="300"/><br/><sub><code>[![Tokenphage](https://api.tokenphage.com/badge/&lt;your-github-name&gt;?mode=dark)](https://github.com/TOKENPHAGE)</code></sub></td>
-</tr>
-</table>
+> 🎫 **사용 가능한 `theme` · `mode` 값과 테마별 미리보기는 → [배지 카탈로그(BADGES.md)](BADGES.md)**
 
 >  ⏱️ **배지는 60분간 캐시됩니다.** 방금 동기화했다면, 최신 수치가 배지에 반영되기까지 최대 1시간 걸릴 수 있어요.
-
 
 ---
 
