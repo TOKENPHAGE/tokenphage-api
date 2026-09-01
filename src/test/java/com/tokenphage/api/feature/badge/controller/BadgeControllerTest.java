@@ -5,7 +5,7 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
+import static org.mockito.BDDMockito.then;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -137,7 +137,7 @@ class BadgeControllerTest {
                     .andExpect(status().isOk());
 
             // then
-            verify(badgeRenderService).getSvg(eq(USERNAME), themeCaptor.capture(), modeCaptor.capture());
+            then(badgeRenderService).should().getSvg(eq(USERNAME), themeCaptor.capture(), modeCaptor.capture());
             assertThat(themeCaptor.getValue()).isEqualTo("gpu");
             assertThat(modeCaptor.getValue()).isEqualTo("light");
         }
@@ -156,7 +156,7 @@ class BadgeControllerTest {
                     .andExpect(status().isOk());
 
             // then
-            verify(badgeRenderService).getSvg(USERNAME, "grass-claude", "dark");
+            then(badgeRenderService).should().getSvg(USERNAME, "grass-claude", "dark");
         }
 
         @Test
@@ -174,7 +174,7 @@ class BadgeControllerTest {
                     .andExpect(status().isOk());
 
             // then
-            verify(badgeRenderService).getSvg(USERNAME, "beta-tester", "green");
+            then(badgeRenderService).should().getSvg(USERNAME, "beta-tester", "green");
         }
     }
 

@@ -19,11 +19,12 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.doThrow;
+import static org.mockito.BDDMockito.then;
+import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
 
 /**
  * SyncOrchestrator.sync 의 조율 흐름(사용자 저장 → 레코드 저장 → 배지 캐시 무효화)과
@@ -81,9 +82,9 @@ class SyncOrchestratorTest {
             // then
             InOrder order =
                 inOrder(userService, tokenUsageRecordService, badgeCacheInvalidator);
-            order.verify(userService).saveUser(GITHUB_ID, USERNAME);
-            order.verify(tokenUsageRecordService).saveRecords(jwt, req);
-            order.verify(badgeCacheInvalidator).evict(USERNAME);
+            then(userService).should(order).saveUser(GITHUB_ID, USERNAME);
+            then(tokenUsageRecordService).should(order).saveRecords(jwt, req);
+            then(badgeCacheInvalidator).should(order).evict(USERNAME);
             order.verifyNoMoreInteractions();
         }
 
@@ -97,9 +98,9 @@ class SyncOrchestratorTest {
             assertThatCode(() -> syncOrchestrator.sync(jwt, req)).doesNotThrowAnyException();
             InOrder order =
                 inOrder(userService, tokenUsageRecordService, badgeCacheInvalidator);
-            order.verify(userService).saveUser(GITHUB_ID, USERNAME);
-            order.verify(tokenUsageRecordService).saveRecords(jwt, req);
-            order.verify(badgeCacheInvalidator).evict(USERNAME);
+            then(userService).should(order).saveUser(GITHUB_ID, USERNAME);
+            then(tokenUsageRecordService).should(order).saveRecords(jwt, req);
+            then(badgeCacheInvalidator).should(order).evict(USERNAME);
         }
     }
 
@@ -112,8 +113,8 @@ class SyncOrchestratorTest {
         void 동기화_레코드저장실패_후속호출없이예외전파() {
             // given
             SyncRequest req = requestWithOneRecord();
-            doThrow(new RuntimeException("DB write failed"))
-                .when(tokenUsageRecordService).saveRecords(jwt, req);
+            willThrow(new RuntimeException("DB write failed"))
+                .given(tokenUsageRecordService).saveRecords(jwt, req);
 
             // when / then
             assertThatThrownBy(() -> syncOrchestrator.sync(jwt, req))
@@ -121,8 +122,8 @@ class SyncOrchestratorTest {
                 .hasMessageContaining("DB write failed");
 
             // then: saveUser는 실패 이전이므로 호출됨, 이후 단계는 호출되지 않아야 함
-            verify(userService).saveUser(GITHUB_ID, USERNAME);
-            verify(badgeCacheInvalidator, never()).evict(USERNAME);
+            then(userService).should().saveUser(GITHUB_ID, USERNAME);
+            then(badgeCacheInvalidator).should(never()).evict(USERNAME);
         }
     }
 }

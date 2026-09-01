@@ -15,11 +15,11 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 /**
  * BadgeCacheInvalidator 의 evict 동작(Redis 키 삭제, SCAN 순회)을 검증한다.
@@ -48,16 +48,16 @@ class BadgeCacheInvalidatorTest {
 
             @SuppressWarnings("unchecked")
             Cursor<String> cursor = (Cursor<String>) mock(Cursor.class);
-            when(cursor.hasNext()).thenReturn(true, true, false);
-            when(cursor.next()).thenReturn(key1, key2);
-            when(redis.scan(any(ScanOptions.class))).thenReturn(cursor);
+            given(cursor.hasNext()).willReturn(true, true, false);
+            given(cursor.next()).willReturn(key1, key2);
+            given(redis.scan(any(ScanOptions.class))).willReturn(cursor);
 
             // when
             invalidator.evict(username);
 
             // then — SCAN(badge:octocat:*)으로 찾은 실제 키를 일괄 삭제한다
-            verify(redis).delete(List.of(key1, key2));
-            verify(cursor).close();
+            then(redis).should().delete(List.of(key1, key2));
+            then(cursor).should().close();
         }
 
         @Test
@@ -68,15 +68,15 @@ class BadgeCacheInvalidatorTest {
 
             @SuppressWarnings("unchecked")
             Cursor<String> cursor = (Cursor<String>) mock(Cursor.class);
-            when(cursor.hasNext()).thenReturn(false);
-            when(redis.scan(any(ScanOptions.class))).thenReturn(cursor);
+            given(cursor.hasNext()).willReturn(false);
+            given(redis.scan(any(ScanOptions.class))).willReturn(cursor);
 
             // when
             invalidator.evict(username);
 
             // then
-            verify(redis, never()).delete(anyCollection());
-            verify(cursor, times(1)).close();
+            then(redis).should(never()).delete(anyCollection());
+            then(cursor).should(times(1)).close();
         }
     }
 }
