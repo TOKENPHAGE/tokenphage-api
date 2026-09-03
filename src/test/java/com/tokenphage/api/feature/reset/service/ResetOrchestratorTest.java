@@ -24,12 +24,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doThrow;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
+import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
 
 /**
  * ResetOrchestrator.reset(Jwt) 검증: 쿨다운 게이트 → DB 삭제 → 배지 캐시 무효화 흐름과 실패 격리 동작.
@@ -65,8 +64,8 @@ class ResetOrchestratorTest {
         orchestrator = new ResetOrchestrator(resetService, badgeCacheInvalidator, redis);
 
         jwt = mock(Jwt.class);
-        when(jwt.getSubject()).thenReturn(GITHUB_ID);
-        when(jwt.getClaimAsString("username")).thenReturn(USERNAME);
+        given(jwt.getSubject()).willReturn(GITHUB_ID);
+        given(jwt.getClaimAsString("username")).willReturn(USERNAME);
     }
 
     @Nested
@@ -77,25 +76,25 @@ class ResetOrchestratorTest {
         @DisplayName("전체초기화_쿨다운선점성공_삭제와캐시무효화수행")
         void 전체초기화_쿨다운선점성공_삭제와캐시무효화수행() {
             // given
-            when(redis.opsForValue()).thenReturn(valueOps);
-            when(valueOps.setIfAbsent(eq(COOLDOWN_KEY), anyString(), any(Duration.class))).thenReturn(Boolean.TRUE);
+            given(redis.opsForValue()).willReturn(valueOps);
+            given(valueOps.setIfAbsent(eq(COOLDOWN_KEY), anyString(), any(Duration.class))).willReturn(Boolean.TRUE);
 
             // when
             orchestrator.reset(jwt);
 
             // then
-            verify(resetService).resetUsage(-12345L);
-            verify(badgeCacheInvalidator).evict(USERNAME);
+            then(resetService).should().resetUsage(-12345L);
+            then(badgeCacheInvalidator).should().evict(USERNAME);
             // 정상 흐름에서는 쿨다운 해제(delete)를 호출하지 않는다.
-            verify(redis, never()).delete(anyString());
+            then(redis).should(never()).delete(anyString());
         }
 
         @Test
         @DisplayName("전체초기화_쿨다운키검증_githubId기반키사용")
         void 전체초기화_쿨다운키검증_githubId기반키사용() {
             // given
-            when(redis.opsForValue()).thenReturn(valueOps);
-            when(valueOps.setIfAbsent(keyCaptor.capture(), anyString(), any(Duration.class))).thenReturn(Boolean.TRUE);
+            given(redis.opsForValue()).willReturn(valueOps);
+            given(valueOps.setIfAbsent(keyCaptor.capture(), anyString(), any(Duration.class))).willReturn(Boolean.TRUE);
 
             // when
             orchestrator.reset(jwt);
@@ -113,8 +112,8 @@ class ResetOrchestratorTest {
         @DisplayName("전체초기화_쿨다운미선점_RESET_COOLDOWN발생")
         void 전체초기화_쿨다운미선점_RESET_COOLDOWN발생() {
             // given
-            when(redis.opsForValue()).thenReturn(valueOps);
-            when(valueOps.setIfAbsent(eq(COOLDOWN_KEY), anyString(), any(Duration.class))).thenReturn(Boolean.FALSE);
+            given(redis.opsForValue()).willReturn(valueOps);
+            given(valueOps.setIfAbsent(eq(COOLDOWN_KEY), anyString(), any(Duration.class))).willReturn(Boolean.FALSE);
 
             // when & then
             assertThatThrownBy(() -> orchestrator.reset(jwt))
@@ -123,8 +122,8 @@ class ResetOrchestratorTest {
                 .isEqualTo(ResetErrorCode.RESET_COOLDOWN);
 
             // 쿨다운으로 거부되면 DB 삭제와 캐시 무효화는 일어나지 않는다.
-            verifyNoInteractions(resetService);
-            verifyNoInteractions(badgeCacheInvalidator);
+            then(resetService).shouldHaveNoInteractions();
+            then(badgeCacheInvalidator).shouldHaveNoInteractions();
         }
 
         @Test
@@ -132,14 +131,14 @@ class ResetOrchestratorTest {
         void 전체초기화_setIfAbsent반환null_쿨다운거부() {
             // given
             // setIfAbsent가 null을 반환해도 Boolean.TRUE.equals(null)==false 이므로 거부되어야 한다(경계 케이스).
-            when(redis.opsForValue()).thenReturn(valueOps);
-            when(valueOps.setIfAbsent(eq(COOLDOWN_KEY), anyString(), any(Duration.class))).thenReturn(null);
+            given(redis.opsForValue()).willReturn(valueOps);
+            given(valueOps.setIfAbsent(eq(COOLDOWN_KEY), anyString(), any(Duration.class))).willReturn(null);
 
             // when & then
             assertThatThrownBy(() -> orchestrator.reset(jwt))
                 .isInstanceOf(AppException.class);
 
-            verify(resetService, never()).resetUsage(any());
+            then(resetService).should(never()).resetUsage(any());
         }
     }
 
@@ -151,18 +150,18 @@ class ResetOrchestratorTest {
         @DisplayName("전체초기화_DB삭제실패_쿨다운해제와예외전파")
         void 전체초기화_DB삭제실패_쿨다운해제와예외전파() {
             // given
-            when(redis.opsForValue()).thenReturn(valueOps);
-            when(valueOps.setIfAbsent(eq(COOLDOWN_KEY), anyString(), any(Duration.class))).thenReturn(Boolean.TRUE);
+            given(redis.opsForValue()).willReturn(valueOps);
+            given(valueOps.setIfAbsent(eq(COOLDOWN_KEY), anyString(), any(Duration.class))).willReturn(Boolean.TRUE);
             RuntimeException dbError = new RuntimeException("DB write failed");
-            doThrow(dbError).when(resetService).resetUsage(-12345L);
+            willThrow(dbError).given(resetService).resetUsage(-12345L);
 
             // when & then
             assertThatThrownBy(() -> orchestrator.reset(jwt))
                 .isSameAs(dbError);
 
             // 서버 오류로 24시간 잠기지 않도록 쿨다운 키를 해제하고, 캐시 무효화는 수행하지 않는다.
-            verify(redis).delete(COOLDOWN_KEY);
-            verifyNoInteractions(badgeCacheInvalidator);
+            then(redis).should().delete(COOLDOWN_KEY);
+            then(badgeCacheInvalidator).shouldHaveNoInteractions();
         }
     }
 
@@ -174,17 +173,17 @@ class ResetOrchestratorTest {
         @DisplayName("전체초기화_캐시무효화실패_예외없이완료")
         void 전체초기화_캐시무효화실패_예외없이완료() {
             // given
-            when(redis.opsForValue()).thenReturn(valueOps);
-            when(valueOps.setIfAbsent(eq(COOLDOWN_KEY), anyString(), any(Duration.class))).thenReturn(Boolean.TRUE);
-            doThrow(new RuntimeException("cache eviction failed")).when(badgeCacheInvalidator).evict(USERNAME);
+            given(redis.opsForValue()).willReturn(valueOps);
+            given(valueOps.setIfAbsent(eq(COOLDOWN_KEY), anyString(), any(Duration.class))).willReturn(Boolean.TRUE);
+            willThrow(new RuntimeException("cache eviction failed")).given(badgeCacheInvalidator).evict(USERNAME);
 
             // when & then
             // DB 삭제는 이미 커밋됐고 캐시 무효화는 best-effort이므로 reset 자체는 성공해야 한다.
             assertThatCode(() -> orchestrator.reset(jwt)).doesNotThrowAnyException();
 
             // 삭제는 정상 수행, 캐시 실패로 쿨다운을 해제하지 않는다(delete 미호출).
-            verify(resetService).resetUsage(-12345L);
-            verify(redis, never()).delete(anyString());
+            then(resetService).should().resetUsage(-12345L);
+            then(redis).should(never()).delete(anyString());
         }
     }
 }

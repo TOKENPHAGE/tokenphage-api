@@ -3,7 +3,7 @@ package com.tokenphage.api.domain.badge.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
+import static org.mockito.BDDMockito.then;
 
 import com.tokenphage.api.domain.badge.repository.UserBadgeGrantRepository;
 import com.tokenphage.api.domain.badge.repository.projection.BadgeGrantRow;
@@ -145,7 +145,7 @@ class BadgeGrantServiceTest {
             sut.resolveGrant(USERNAME, PUBLIC_CODE);
 
             // then
-            verify(grantRepo).findGrant(usernameCaptor.capture(), codeCaptor.capture());
+            then(grantRepo).should().findGrant(usernameCaptor.capture(), codeCaptor.capture());
             assertThat(usernameCaptor.getValue()).isEqualTo(USERNAME);
             assertThat(codeCaptor.getValue()).isEqualTo(PUBLIC_CODE);
         }

@@ -26,8 +26,9 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
@@ -77,7 +78,7 @@ class RequestAuditAspectTest {
     @DisplayName("캡처_성공응답_상태와기능정보기록")
     void 캡처_성공응답_상태와기능정보기록() throws Throwable {
         // given
-        when(joinPoint.proceed()).thenReturn(ResponseEntity.ok().build());
+        given(joinPoint.proceed()).willReturn(ResponseEntity.ok().build());
 
         // when
         aspect.audit(joinPoint);
@@ -100,7 +101,7 @@ class RequestAuditAspectTest {
         // given
         // 200으로 응답하지만 도메인상 거부인 경우(자격 없는 배지)를 구분하기 위한 통로다.
         currentRequest().setAttribute(AuditOutcome.ATTRIBUTE_KEY, AuditOutcome.BADGE_GRANT_DENIED);
-        when(joinPoint.proceed()).thenReturn(ResponseEntity.ok().build());
+        given(joinPoint.proceed()).willReturn(ResponseEntity.ok().build());
 
         // when
         aspect.audit(joinPoint);
@@ -117,7 +118,7 @@ class RequestAuditAspectTest {
         // given
         // AuditOutcome 타입만 받는다. 문자열을 심어도 무시하고 기본값으로 떨어져야 한다.
         currentRequest().setAttribute(AuditOutcome.ATTRIBUTE_KEY, "badge_grant_denied");
-        when(joinPoint.proceed()).thenReturn(ResponseEntity.ok().build());
+        given(joinPoint.proceed()).willReturn(ResponseEntity.ok().build());
 
         // when
         aspect.audit(joinPoint);
@@ -130,7 +131,7 @@ class RequestAuditAspectTest {
     @DisplayName("캡처_결과미지정_success로기록")
     void 캡처_결과미지정_success로기록() throws Throwable {
         // given
-        when(joinPoint.proceed()).thenReturn(ResponseEntity.ok().build());
+        given(joinPoint.proceed()).willReturn(ResponseEntity.ok().build());
 
         // when
         aspect.audit(joinPoint);
@@ -147,7 +148,7 @@ class RequestAuditAspectTest {
         MockHttpServletRequest request = currentRequest();
         request.setRequestURI("/badge/example-user");
         request.setQueryString("theme=contributor&mode=dark");
-        when(joinPoint.proceed()).thenReturn(ResponseEntity.ok().build());
+        given(joinPoint.proceed()).willReturn(ResponseEntity.ok().build());
 
         // when
         aspect.audit(joinPoint);
@@ -165,7 +166,7 @@ class RequestAuditAspectTest {
         MockHttpServletRequest request = currentRequest();
         request.setRequestURI("/badge/example-user");
         request.setQueryString("theme=" + "x".repeat(400));
-        when(joinPoint.proceed()).thenReturn(ResponseEntity.ok().build());
+        given(joinPoint.proceed()).willReturn(ResponseEntity.ok().build());
 
         // when
         aspect.audit(joinPoint);
@@ -186,7 +187,7 @@ class RequestAuditAspectTest {
     @DisplayName("캡처_AppException_에러코드상태와코드기록후재전파")
     void 캡처_AppException_에러코드상태와코드기록후재전파() throws Throwable {
         // given — gist 도용 시나리오(401, AUTH_007)
-        when(joinPoint.proceed()).thenThrow(new AppException(AuthErrorCode.OWNER_MISMATCH));
+        given(joinPoint.proceed()).willThrow(new AppException(AuthErrorCode.OWNER_MISMATCH));
 
         // when / then — 예외는 그대로 재전파되어야 한다
         assertThatThrownBy(() -> aspect.audit(joinPoint)).isInstanceOf(AppException.class);
@@ -200,7 +201,7 @@ class RequestAuditAspectTest {
     @DisplayName("캡처_미인증요청_식별필드null")
     void 캡처_미인증요청_식별필드null() throws Throwable {
         // given — SecurityContext 미설정
-        when(joinPoint.proceed()).thenReturn(ResponseEntity.ok().build());
+        given(joinPoint.proceed()).willReturn(ResponseEntity.ok().build());
 
         // when
         aspect.audit(joinPoint);
@@ -222,7 +223,7 @@ class RequestAuditAspectTest {
             .build();
         SecurityContextHolder.getContext().setAuthentication(
             new UsernamePasswordAuthenticationToken(jwt, null));
-        when(joinPoint.proceed()).thenReturn(ResponseEntity.ok().build());
+        given(joinPoint.proceed()).willReturn(ResponseEntity.ok().build());
 
         // when
         aspect.audit(joinPoint);
@@ -235,7 +236,7 @@ class RequestAuditAspectTest {
 
     private RequestAuditCommand captureRecorded() {
         ArgumentCaptor<RequestAuditCommand> captor = ArgumentCaptor.forClass(RequestAuditCommand.class);
-        verify(requestAuditService).record(captor.capture());
+        then(requestAuditService).should().record(captor.capture());
         return captor.getValue();
     }
 }

@@ -14,8 +14,8 @@ import java.time.format.DateTimeParseException;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 /**
  * GlobalExceptionHandler의 예외 → HTTP 응답 매핑을 검증한다.
@@ -31,8 +31,8 @@ class GlobalExceptionHandlerTest {
         // given
         MethodArgumentNotValidException ex = mock(MethodArgumentNotValidException.class);
         BindingResult bindingResult = mock(BindingResult.class);
-        when(ex.getBindingResult()).thenReturn(bindingResult);
-        when(bindingResult.getFieldErrors()).thenReturn(List.of(
+        given(ex.getBindingResult()).willReturn(bindingResult);
+        given(bindingResult.getFieldErrors()).willReturn(List.of(
             new FieldError("syncRequest", "deviceId", "deviceId must be a valid UUID")));
 
         // when

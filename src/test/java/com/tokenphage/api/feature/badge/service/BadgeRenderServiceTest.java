@@ -33,9 +33,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 /**
  * BadgeRenderService.getSvg()의 자격 확인, 캐시 키 정규화, 캐시 적중·미적중, 예외 전파를 검증한다.
@@ -91,14 +91,14 @@ class BadgeRenderServiceTest {
 
     /** theme이 이미 정규화된 값(gpu)이고 mode가 LIGHT로 확정될 때의 정규화 스텁. */
     private void stubNormalizeIdentity() {
-        when(svgBuilder.normalizeTheme(THEME)).thenReturn(THEME);
-        when(svgBuilder.resolveMode(THEME, MODE)).thenReturn(BadgeMode.LIGHT);
+        given(svgBuilder.normalizeTheme(THEME)).willReturn(THEME);
+        given(svgBuilder.resolveMode(THEME, MODE)).willReturn(BadgeMode.LIGHT);
     }
 
     /** 자격이 있는 정상 경로 스텁. 이 스텁이 없으면 Mockito 기본값(null)으로 NPE가 난다. */
     private void stubGranted() {
-        when(badgeGrantService.resolveGrant(anyString(), anyString()))
-                .thenReturn(BadgeGrantResult.allow());
+        given(badgeGrantService.resolveGrant(anyString(), anyString()))
+                .willReturn(BadgeGrantResult.allow());
     }
 
     @Nested
@@ -110,12 +110,12 @@ class BadgeRenderServiceTest {
         void 배지조회_자격없음_잠금SVG반환하고조회캐시생략() {
             // given
             String lockedSvg = "<svg>locked</svg>";
-            when(svgBuilder.normalizeTheme(THEME)).thenReturn(THEME);
-            when(badgeGrantService.resolveGrant(USERNAME, THEME))
-                    .thenReturn(BadgeGrantResult.deny("Contributor", "PR을 보내주세요"));
+            given(svgBuilder.normalizeTheme(THEME)).willReturn(THEME);
+            given(badgeGrantService.resolveGrant(USERNAME, THEME))
+                    .willReturn(BadgeGrantResult.deny("Contributor", "PR을 보내주세요"));
             // 잠금 렌더는 locked 테마 자신의 지원 집합으로 모드를 다시 정규화한다
-            when(svgBuilder.resolveMode(BadgeCode.LOCKED.getCode(), MODE)).thenReturn(BadgeMode.LIGHT);
-            when(lockedBadgeTheme.render("Contributor", "PR을 보내주세요", false)).thenReturn(lockedSvg);
+            given(svgBuilder.resolveMode(BadgeCode.LOCKED.getCode(), MODE)).willReturn(BadgeMode.LIGHT);
+            given(lockedBadgeTheme.render("Contributor", "PR을 보내주세요", false)).willReturn(lockedSvg);
 
             // when
             BadgeSvgResponse result = service.getSvg(USERNAME, THEME, MODE);
@@ -124,27 +124,27 @@ class BadgeRenderServiceTest {
             assertThat(result.svg()).isEqualTo(lockedSvg);
             assertThat(result.granted()).isFalse();
             // 자격 거부 경로는 집계 조회·SVG 빌드·캐시 저장을 전부 건너뛴다
-            verify(queryService, never()).query(anyString(), anyString(), any());
-            verify(svgBuilder, never()).build(any(), anyString(), anyString());
-            verify(valueOps, never()).set(anyString(), anyString(), any(Duration.class));
+            then(queryService).should(never()).query(anyString(), anyString(), any());
+            then(svgBuilder).should(never()).build(any(), anyString(), anyString());
+            then(valueOps).should(never()).set(anyString(), anyString(), any(Duration.class));
         }
 
         @Test
         @DisplayName("배지조회_자격없음_캐시를조회조차하지않는다")
         void 배지조회_자격없음_캐시를조회조차하지않는다() {
             // given
-            when(svgBuilder.normalizeTheme(THEME)).thenReturn(THEME);
-            when(badgeGrantService.resolveGrant(USERNAME, THEME))
-                    .thenReturn(BadgeGrantResult.deny(null, null));
-            when(svgBuilder.resolveMode(BadgeCode.LOCKED.getCode(), MODE)).thenReturn(BadgeMode.LIGHT);
-            when(lockedBadgeTheme.render(null, null, false)).thenReturn("<svg>locked</svg>");
+            given(svgBuilder.normalizeTheme(THEME)).willReturn(THEME);
+            given(badgeGrantService.resolveGrant(USERNAME, THEME))
+                    .willReturn(BadgeGrantResult.deny(null, null));
+            given(svgBuilder.resolveMode(BadgeCode.LOCKED.getCode(), MODE)).willReturn(BadgeMode.LIGHT);
+            given(lockedBadgeTheme.render(null, null, false)).willReturn("<svg>locked</svg>");
 
             // when
             service.getSvg(USERNAME, THEME, MODE);
 
             // then
             // 게이트가 캐시보다 앞에 있어야 캐시 키와 내용 불일치가 생기지 않는다
-            verify(redis, never()).opsForValue();
+            then(redis).should(never()).opsForValue();
         }
 
         @Test
@@ -153,15 +153,15 @@ class BadgeRenderServiceTest {
             // given
             stubNormalizeIdentity();
             stubGranted();
-            when(redis.opsForValue()).thenReturn(valueOps);
-            when(valueOps.get(EXPECTED_CACHE_KEY)).thenReturn("<svg>cached</svg>");
+            given(redis.opsForValue()).willReturn(valueOps);
+            given(valueOps.get(EXPECTED_CACHE_KEY)).willReturn("<svg>cached</svg>");
 
             // when
             service.getSvg(USERNAME, THEME, MODE);
 
             // then
             // 판정을 캐시 뒤로 미루면 자격 회수가 최대 60분간 반영되지 않는다
-            verify(badgeGrantService).resolveGrant(USERNAME, THEME);
+            then(badgeGrantService).should().resolveGrant(USERNAME, THEME);
         }
     }
 
@@ -176,8 +176,8 @@ class BadgeRenderServiceTest {
             String cachedSvg = "<svg>cached</svg>";
             stubNormalizeIdentity();
             stubGranted();
-            when(redis.opsForValue()).thenReturn(valueOps);
-            when(valueOps.get(EXPECTED_CACHE_KEY)).thenReturn(cachedSvg);
+            given(redis.opsForValue()).willReturn(valueOps);
+            given(valueOps.get(EXPECTED_CACHE_KEY)).willReturn(cachedSvg);
 
             // when
             BadgeSvgResponse result = service.getSvg(USERNAME, THEME, MODE);
@@ -185,10 +185,10 @@ class BadgeRenderServiceTest {
             // then
             assertThat(result.svg()).isEqualTo(cachedSvg);
             assertThat(result.granted()).isTrue();
-            verify(queryService, never()).query(anyString(), anyString(), any());
-            verify(svgBuilder, never()).build(any(), anyString(), anyString());
+            then(queryService).should(never()).query(anyString(), anyString(), any());
+            then(svgBuilder).should(never()).build(any(), anyString(), anyString());
             // 캐시 히트 시 set은 호출되지 않아야 한다
-            verify(valueOps, never()).set(anyString(), anyString(), any(Duration.class));
+            then(valueOps).should(never()).set(anyString(), anyString(), any(Duration.class));
         }
     }
 
@@ -204,11 +204,11 @@ class BadgeRenderServiceTest {
             String builtSvg = "<svg>built</svg>";
             stubNormalizeIdentity();
             stubGranted();
-            when(redis.opsForValue()).thenReturn(valueOps);
-            when(valueOps.get(EXPECTED_CACHE_KEY)).thenReturn(null);
-            when(svgBuilder.needsOf(THEME)).thenReturn(GPU_NEEDS);
-            when(queryService.query(USERNAME, THEME, GPU_NEEDS)).thenReturn(data);
-            when(svgBuilder.build(data, THEME, MODE)).thenReturn(builtSvg);
+            given(redis.opsForValue()).willReturn(valueOps);
+            given(valueOps.get(EXPECTED_CACHE_KEY)).willReturn(null);
+            given(svgBuilder.needsOf(THEME)).willReturn(GPU_NEEDS);
+            given(queryService.query(USERNAME, THEME, GPU_NEEDS)).willReturn(data);
+            given(svgBuilder.build(data, THEME, MODE)).willReturn(builtSvg);
 
             // when
             BadgeSvgResponse result = service.getSvg(USERNAME, THEME, MODE);
@@ -216,8 +216,8 @@ class BadgeRenderServiceTest {
             // then
             assertThat(result.svg()).isEqualTo(builtSvg);
             assertThat(result.granted()).isTrue();
-            verify(queryService).query(USERNAME, THEME, GPU_NEEDS);
-            verify(svgBuilder).build(data, THEME, MODE);
+            then(queryService).should().query(USERNAME, THEME, GPU_NEEDS);
+            then(svgBuilder).should().build(data, THEME, MODE);
         }
 
         @Test
@@ -228,11 +228,11 @@ class BadgeRenderServiceTest {
             String builtSvg = "<svg>built</svg>";
             stubNormalizeIdentity();
             stubGranted();
-            when(redis.opsForValue()).thenReturn(valueOps);
-            when(valueOps.get(EXPECTED_CACHE_KEY)).thenReturn(null);
-            when(svgBuilder.needsOf(THEME)).thenReturn(GPU_NEEDS);
-            when(queryService.query(USERNAME, THEME, GPU_NEEDS)).thenReturn(data);
-            when(svgBuilder.build(data, THEME, MODE)).thenReturn(builtSvg);
+            given(redis.opsForValue()).willReturn(valueOps);
+            given(valueOps.get(EXPECTED_CACHE_KEY)).willReturn(null);
+            given(svgBuilder.needsOf(THEME)).willReturn(GPU_NEEDS);
+            given(queryService.query(USERNAME, THEME, GPU_NEEDS)).willReturn(data);
+            given(svgBuilder.build(data, THEME, MODE)).willReturn(builtSvg);
 
             ArgumentCaptor<String> keyCaptor = ArgumentCaptor.forClass(String.class);
             ArgumentCaptor<Duration> ttlCaptor = ArgumentCaptor.forClass(Duration.class);
@@ -241,7 +241,7 @@ class BadgeRenderServiceTest {
             service.getSvg(USERNAME, THEME, MODE);
 
             // then
-            verify(valueOps).set(keyCaptor.capture(), eq(builtSvg), ttlCaptor.capture());
+            then(valueOps).should().set(keyCaptor.capture(), eq(builtSvg), ttlCaptor.capture());
             assertThat(keyCaptor.getValue()).isEqualTo(EXPECTED_CACHE_KEY);
             assertThat(ttlCaptor.getValue()).isEqualTo(Duration.ofMinutes(CACHE_TTL_MINUTES));
         }
@@ -252,15 +252,15 @@ class BadgeRenderServiceTest {
             // given: 임의 theme/mode가 svgBuilder 정규화로 gpu/light로 수렴
             BadgeResponse data = sampleData();
             String builtSvg = "<svg>built</svg>";
-            when(svgBuilder.normalizeTheme("ZZZ")).thenReturn("gpu");
-            when(svgBuilder.resolveMode("gpu", "GARBAGE")).thenReturn(BadgeMode.LIGHT);
+            given(svgBuilder.normalizeTheme("ZZZ")).willReturn("gpu");
+            given(svgBuilder.resolveMode("gpu", "GARBAGE")).willReturn(BadgeMode.LIGHT);
             stubGranted();
-            when(redis.opsForValue()).thenReturn(valueOps);
-            when(valueOps.get(EXPECTED_CACHE_KEY)).thenReturn(null);
+            given(redis.opsForValue()).willReturn(valueOps);
+            given(valueOps.get(EXPECTED_CACHE_KEY)).willReturn(null);
             // needsOf는 정규화된 theme("gpu")로 호출된다
-            when(svgBuilder.needsOf("gpu")).thenReturn(GPU_NEEDS);
-            when(queryService.query(USERNAME, THEME, GPU_NEEDS)).thenReturn(data);
-            when(svgBuilder.build(data, "gpu", "light")).thenReturn(builtSvg);
+            given(svgBuilder.needsOf("gpu")).willReturn(GPU_NEEDS);
+            given(queryService.query(USERNAME, THEME, GPU_NEEDS)).willReturn(data);
+            given(svgBuilder.build(data, "gpu", "light")).willReturn(builtSvg);
 
             ArgumentCaptor<String> keyCaptor = ArgumentCaptor.forClass(String.class);
 
@@ -269,11 +269,11 @@ class BadgeRenderServiceTest {
 
             // then: raw 입력과 무관하게 정규화된 단일 키로 수렴 (캐시 증식 방지)
             assertThat(result.svg()).isEqualTo(builtSvg);
-            verify(valueOps).set(keyCaptor.capture(), eq(builtSvg), any(Duration.class));
+            then(valueOps).should().set(keyCaptor.capture(), eq(builtSvg), any(Duration.class));
             assertThat(keyCaptor.getValue()).isEqualTo(EXPECTED_CACHE_KEY);
-            verify(svgBuilder).build(data, "gpu", "light");
+            then(svgBuilder).should().build(data, "gpu", "light");
             // 자격 판정도 정규화된 theme으로 이뤄져야 한다
-            verify(badgeGrantService).resolveGrant(USERNAME, "gpu");
+            then(badgeGrantService).should().resolveGrant(USERNAME, "gpu");
         }
     }
 
@@ -287,11 +287,11 @@ class BadgeRenderServiceTest {
             // given
             stubNormalizeIdentity();
             stubGranted();
-            when(redis.opsForValue()).thenReturn(valueOps);
-            when(valueOps.get(EXPECTED_CACHE_KEY)).thenReturn(null);
-            when(svgBuilder.needsOf(THEME)).thenReturn(GPU_NEEDS);
-            when(queryService.query(USERNAME, THEME, GPU_NEEDS))
-                    .thenThrow(new AppException(BadgeErrorCode.USER_NOT_FOUND));
+            given(redis.opsForValue()).willReturn(valueOps);
+            given(valueOps.get(EXPECTED_CACHE_KEY)).willReturn(null);
+            given(svgBuilder.needsOf(THEME)).willReturn(GPU_NEEDS);
+            given(queryService.query(USERNAME, THEME, GPU_NEEDS))
+                    .willThrow(new AppException(BadgeErrorCode.USER_NOT_FOUND));
 
             // when & then
             assertThatThrownBy(() -> service.getSvg(USERNAME, THEME, MODE))
@@ -299,8 +299,8 @@ class BadgeRenderServiceTest {
                     .hasMessage(BadgeErrorCode.USER_NOT_FOUND.getMessage());
 
             // 예외 발생 시 SVG 생성과 캐시 저장은 일어나지 않아야 한다
-            verify(svgBuilder, never()).build(any(), anyString(), anyString());
-            verify(valueOps, never()).set(anyString(), anyString(), any(Duration.class));
+            then(svgBuilder).should(never()).build(any(), anyString(), anyString());
+            then(valueOps).should(never()).set(anyString(), anyString(), any(Duration.class));
         }
     }
 }

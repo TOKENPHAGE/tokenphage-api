@@ -23,8 +23,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 /**
  * GistVerificationService.verify 의 분기별 성공/실패 및 경계 동작을 검증하는 테스트.
@@ -53,14 +53,14 @@ class GistVerificationServiceTest {
 
     /** Gist API 종단 body() 호출이 주어진 응답을 반환하도록 stub 한다. */
     private void stubGistResponse(GistResponse response) {
-        when(gistRestClient.get().uri(anyString(), (Object) any()).retrieve().body(GistResponse.class))
-            .thenReturn(response);
+        given(gistRestClient.get().uri(anyString(), (Object) any()).retrieve().body(GistResponse.class))
+            .willReturn(response);
     }
 
     /** Gist API 종단 body() 호출이 주어진 예외를 던지도록 stub 한다. */
     private void stubGistThrows(Throwable throwable) {
-        when(gistRestClient.get().uri(anyString(), (Object) any()).retrieve().body(GistResponse.class))
-            .thenThrow(throwable);
+        given(gistRestClient.get().uri(anyString(), (Object) any()).retrieve().body(GistResponse.class))
+            .willThrow(throwable);
     }
 
     /** 공개+소유자일치+검증파일에 challenge 가 담긴 정상 Gist 응답을 만든다. */
