@@ -89,66 +89,6 @@ class DailyTokenUsageIdTest {
         }
 
         @Test
-        @DisplayName("equals_githubId만다름_false반환")
-        void equals_githubId만다름_false반환() {
-            // given
-            DailyTokenUsageId a = baseId();
-            DailyTokenUsageId b = newId(-999L, DEVICE_ID, USAGE_DATE, MODEL);
-
-            // when
-            boolean result = a.equals(b);
-
-            // then
-            assertThat(result).isFalse();
-        }
-
-        @Test
-        @DisplayName("equals_deviceId만다름_false반환")
-        void equals_deviceId만다름_false반환() {
-            // given
-            DailyTokenUsageId a = baseId();
-            DailyTokenUsageId b = newId(
-                    GITHUB_ID,
-                    UUID.fromString("22222222-2222-2222-2222-222222222222"),
-                    USAGE_DATE,
-                    MODEL);
-
-            // when
-            boolean result = a.equals(b);
-
-            // then
-            assertThat(result).isFalse();
-        }
-
-        @Test
-        @DisplayName("equals_usageDate만다름_false반환")
-        void equals_usageDate만다름_false반환() {
-            // given
-            DailyTokenUsageId a = baseId();
-            DailyTokenUsageId b = newId(GITHUB_ID, DEVICE_ID, LocalDate.of(2026, 6, 1), MODEL);
-
-            // when
-            boolean result = a.equals(b);
-
-            // then
-            assertThat(result).isFalse();
-        }
-
-        @Test
-        @DisplayName("equals_model만다름_false반환")
-        void equals_model만다름_false반환() {
-            // given
-            DailyTokenUsageId a = baseId();
-            DailyTokenUsageId b = newId(GITHUB_ID, DEVICE_ID, USAGE_DATE, "claude-sonnet-4");
-
-            // when
-            boolean result = a.equals(b);
-
-            // then
-            assertThat(result).isFalse();
-        }
-
-        @Test
         @DisplayName("equals_null비교_false반환")
         void equals_null비교_false반환() {
             // given

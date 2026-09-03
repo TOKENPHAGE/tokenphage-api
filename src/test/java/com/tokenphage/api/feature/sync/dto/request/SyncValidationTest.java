@@ -31,6 +31,12 @@ class SyncValidationTest {
 
     private static final String VALID_UUID = "550e8400-e29b-41d4-a716-446655440000";
 
+    // 한계값은 DTO 가 단일 출처다. 여기서 복제하면 애너테이션이 바뀌어도 테스트가 못 잡는다.
+    // DDL 과의 대조는 SchemaConstraintConsistencyTest 가 담당한다.
+    private static final int MODEL_MAX_LENGTH = TokenRecordRequest.MODEL_MAX_LENGTH;
+    private static final long TOKEN_MAX = TokenRecordRequest.TOKEN_MAX;
+    private static final int MAX_RECORDS = SyncRequest.MAX_RECORDS;
+
     @BeforeAll
     static void setUp() {
         factory = Validation.buildDefaultValidatorFactory();
@@ -44,6 +50,13 @@ class SyncValidationTest {
 
     private TokenRecordRequest validRecord() {
         return new TokenRecordRequest("2026-06-11", "claude-opus-4", 1, 1, 0, 0);
+    }
+
+    /** 유효한 레코드 n건. 개수 제약만 검증하도록 각 레코드 자체는 위반이 없게 만든다. */
+    private static List<TokenRecordRequest> records(int n) {
+        return java.util.stream.IntStream.range(0, n)
+                .mapToObj(i -> new TokenRecordRequest("2026-06-11", "claude-opus-4", 1, 1, 0, 0))
+                .toList();
     }
 
     private static boolean hasViolationOn(Set<? extends ConstraintViolation<?>> violations, String field) {
@@ -121,6 +134,32 @@ class SyncValidationTest {
             // then
             assertThat(violations).isNotEmpty();
         }
+
+        @Test
+        @DisplayName("records가 상한(10,000건)이면 위반 없음 - 경계")
+        void 동기화요청_records상한_위반없음() {
+            // given
+            SyncRequest req = new SyncRequest(VALID_UUID, records(MAX_RECORDS));
+
+            // when
+            var violations = validator.validate(req);
+
+            // then
+            assertThat(hasViolationOn(violations, "records")).isFalse();
+        }
+
+        @Test
+        @DisplayName("records가 상한을 1건 넘으면 records 위반 - 무제한 역직렬화로 인한 OOM 차단")
+        void 동기화요청_records상한초과_위반발생() {
+            // given: 상한이 없으면 Jackson 이 수백만 건을 전부 힙에 올린다
+            SyncRequest req = new SyncRequest(VALID_UUID, records(MAX_RECORDS + 1));
+
+            // when
+            var violations = validator.validate(req);
+
+            // then
+            assertThat(hasViolationOn(violations, "records")).isTrue();
+        }
     }
 
     @Nested
@@ -197,6 +236,67 @@ class SyncValidationTest {
 
             // then
             assertThat(violations).isEmpty();
+        }
+
+        @Test
+        @DisplayName("model이 컬럼 폭(80자)이면 위반 없음 - 경계")
+        void 레코드_model컬럼폭길이_위반없음() {
+            // given
+            TokenRecordRequest r = new TokenRecordRequest(
+                    "2026-06-11", "m".repeat(MODEL_MAX_LENGTH), 1, 1, 0, 0);
+
+            // when
+            var violations = validator.validate(r);
+
+            // then
+            assertThat(violations).isEmpty();
+        }
+
+        @Test
+        @DisplayName("model이 컬럼 폭을 1자 넘으면 model 위반 - DB 500 대신 400으로 막는다")
+        void 레코드_model컬럼폭초과_위반발생() {
+            // given: 제약이 없으면 네이티브 INSERT 까지 내려가 Postgres 22001 이 나고,
+            // saveRecords 가 @Transactional 이라 그 sync 배치 전체가 롤백된다
+            TokenRecordRequest r = new TokenRecordRequest(
+                    "2026-06-11", "m".repeat(MODEL_MAX_LENGTH + 1), 1, 1, 0, 0);
+
+            // when
+            var violations = validator.validate(r);
+
+            // then
+            assertThat(hasViolationOn(violations, "model")).isTrue();
+        }
+
+        @Test
+        @DisplayName("토큰 4필드가 상한이면 위반 없음 - 경계")
+        void 레코드_토큰상한_위반없음() {
+            // given
+            TokenRecordRequest r = new TokenRecordRequest(
+                    "2026-06-11", "claude", TOKEN_MAX, TOKEN_MAX, TOKEN_MAX, TOKEN_MAX);
+
+            // when
+            var violations = validator.validate(r);
+
+            // then
+            assertThat(violations).isEmpty();
+        }
+
+        @Test
+        @DisplayName("토큰 4필드가 상한을 1 넘으면 각 필드 위반 - bigint SUM 오버플로 차단")
+        void 레코드_토큰상한초과_각필드위반발생() {
+            // given: 상한이 없으면 Long.MAX 급 값이 저장되고, 이후 SUM(input_tok + output_tok) 이
+            // Postgres 22003 을 던져 그 사용자 배지가 영구 500 이 된다 (자가 복구 불가)
+            long over = TOKEN_MAX + 1;
+            TokenRecordRequest r = new TokenRecordRequest("2026-06-11", "claude", over, over, over, over);
+
+            // when
+            var violations = validator.validate(r);
+
+            // then
+            assertThat(hasViolationOn(violations, "inputTok")).isTrue();
+            assertThat(hasViolationOn(violations, "outputTok")).isTrue();
+            assertThat(hasViolationOn(violations, "cacheReadTok")).isTrue();
+            assertThat(hasViolationOn(violations, "cacheCreateTok")).isTrue();
         }
     }
 }
