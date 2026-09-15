@@ -20,6 +20,7 @@ public class BadgeController {
      * <p>
      * 배지 주인에게 자격이 없으면 잠금 안내 SVG를 200으로 반환한다.
      * 4xx는 깨진 이미지로 보인다. 대신 결과 값을 요청 속성에 넣어 접근 기록에 남긴다.
+     * 다만 배지 주인이 가입돼 있지 않으면 테마와 무관하게 404(BADGE_001)로 끊는다.
      *
      * @param request  결과 값을 실어 보낼 현재 요청
      * @param username 배지를 조회할 GitHub 사용자명

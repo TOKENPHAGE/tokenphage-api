@@ -4,9 +4,16 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.HttpMediaTypeNotAcceptableException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import jakarta.servlet.ServletException;
 
 import java.time.format.DateTimeParseException;
 import java.util.stream.Collectors;
@@ -91,6 +98,36 @@ public class GlobalExceptionHandler {
         return ResponseEntity
             .status(HttpStatus.BAD_REQUEST)
             .body(new ErrorResponse("INVALID_ARGUMENT", "Request contains an invalid value."));
+    }
+
+    /**
+     * 라우팅·프로토콜 단계에서 발생한 요청 오류를 예외가 지정한 4xx로 반환한다.
+     * <p>
+     * 이 예외들은 모두 {@code org.springframework.web.ErrorResponse}를 구현해 상태를 스스로 안다.
+     * 응답 코드·메시지를 그 상태에서 파생하므로 예외를 추가할 때 매핑 표를 고칠 필요가 없다.
+     * 예외 메시지는 내부 구현(정적 리소스 폴백 등)을 노출하므로 로그에만 남긴다.
+     *
+     * @param e 라우팅·프로토콜 단계 예외
+     * @return 예외가 지정한 상태와 그 상태명을 코드로 담은 응답
+     * @Since 2026-09-09
+     */
+    @ExceptionHandler({
+        NoResourceFoundException.class,
+        HttpRequestMethodNotSupportedException.class,
+        HttpMediaTypeNotSupportedException.class,
+        HttpMediaTypeNotAcceptableException.class,
+        MissingServletRequestParameterException.class
+    })
+    public ResponseEntity<ErrorResponse> handleWebRequestException(ServletException e) {
+        // 목록에 ErrorResponse 미구현 예외가 잘못 추가되면 기존 500 경로로 되돌린다
+        if (!(e instanceof org.springframework.web.ErrorResponse errorResponse)) {
+            return handleException(e);
+        }
+        HttpStatus status = HttpStatus.valueOf(errorResponse.getStatusCode().value());
+        log.warn("Request could not be handled: status={}, reason={}", status.value(), e.getMessage());
+        return ResponseEntity
+            .status(status)
+            .body(new ErrorResponse(status.name(), status.getReasonPhrase() + "."));
     }
 
     /**

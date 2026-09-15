@@ -155,7 +155,7 @@ class UserBadgeGrantRepositoryIntegrationTest extends ContainerSupport {
 
         @Test
         @DisplayName("SQL 별칭이 BadgeGrantRow getter에 매핑된다")
-        void 자격조회_projection별칭_displayName과lockedMessage매핑() {
+        void 자격조회_projection별칭_displayName과lockedMessage와userExists매핑() {
             // given
             insertPrivateBadge();
             insertUser(GITHUB_ID, USERNAME);
@@ -163,10 +163,44 @@ class UserBadgeGrantRepositoryIntegrationTest extends ContainerSupport {
             // when
             BadgeGrantRow row = repository.findGrant(USERNAME, PRIVATE_CODE);
 
-            // then: alias displayName/lockedMessage 가 getter로 바인딩된다 (불일치 시 null)
+            // then: alias displayName/lockedMessage/userExists 가 getter로 바인딩된다 (불일치 시 null)
             assertThat(row).isNotNull();
             assertThat(row.getDisplayName()).isEqualTo(DISPLAY_NAME);
             assertThat(row.getLockedMessage()).isEqualTo(LOCKED_MESSAGE);
+            assertThat(row.getUserExists()).isTrue();
+        }
+    }
+
+    @Nested
+    @DisplayName("findGrant() - 사용자 존재 여부")
+    class UserExistence {
+
+        @Test
+        @DisplayName("미가입 사용자는 공개 배지여도 userExists가 false다")
+        void 자격조회_미가입사용자_userExists거짓() {
+            // given: users에 행을 넣지 않는다 (미가입 상태)
+
+            // when
+            BadgeGrantRow row = repository.findGrant(USERNAME, PUBLIC_CODE);
+
+            // then: 공개 배지라 granted는 true로 남고, 사용자 존재는 별도 컬럼으로 구분된다
+            assertThat(row).isNotNull();
+            assertThat(row.getGranted()).isTrue();
+            assertThat(row.getUserExists()).isFalse();
+        }
+
+        @Test
+        @DisplayName("가입 사용자는 userExists가 true다")
+        void 자격조회_가입사용자_userExists참() {
+            // given
+            insertUser(GITHUB_ID, USERNAME);
+
+            // when
+            BadgeGrantRow row = repository.findGrant(USERNAME, PUBLIC_CODE);
+
+            // then: users에 행이 있으면 EXISTS가 참이다
+            assertThat(row).isNotNull();
+            assertThat(row.getUserExists()).isTrue();
         }
     }
 }

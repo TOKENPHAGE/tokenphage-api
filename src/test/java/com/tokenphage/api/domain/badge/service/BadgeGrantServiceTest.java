@@ -41,9 +41,10 @@ class BadgeGrantServiceTest {
     /**
      * 가짜 조회 결과를 만든다.
      */
-    private BadgeGrantRow row(boolean granted, String displayName, String lockedMessage) {
+    private BadgeGrantRow row(boolean granted, boolean userExists, String displayName, String lockedMessage) {
         return new BadgeGrantRow() {
             @Override public boolean getGranted() { return granted; }
+            @Override public boolean getUserExists() { return userExists; }
             @Override public String getDisplayName() { return displayName; }
             @Override public String getLockedMessage() { return lockedMessage; }
         };
@@ -58,7 +59,7 @@ class BadgeGrantServiceTest {
         void 사용가능여부_누구나쓰는배지_허용() {
             // given
             given(grantRepo.findGrant(USERNAME, PUBLIC_CODE))
-                    .willReturn(row(true, "GPU Card", null));
+                    .willReturn(row(true, true, "GPU Card", null));
 
             // when
             BadgeGrantResult result = sut.resolveGrant(USERNAME, PUBLIC_CODE);
@@ -74,7 +75,7 @@ class BadgeGrantServiceTest {
         void 사용가능여부_자격필요한배지에자격있음_허용() {
             // given
             given(grantRepo.findGrant(USERNAME, PRIVATE_CODE))
-                    .willReturn(row(true, "Contributor", "PR을 보내고 이 배지를 받아보세요"));
+                    .willReturn(row(true, true, "Contributor", "PR을 보내고 이 배지를 받아보세요"));
 
             // when
             BadgeGrantResult result = sut.resolveGrant(USERNAME, PRIVATE_CODE);
@@ -88,13 +89,14 @@ class BadgeGrantServiceTest {
         void 사용가능여부_자격필요한배지에자격없음_거부하고안내문구반환() {
             // given
             given(grantRepo.findGrant(USERNAME, PRIVATE_CODE))
-                    .willReturn(row(false, "Contributor", "PR을 보내고 이 배지를 받아보세요"));
+                    .willReturn(row(false, true, "Contributor", "PR을 보내고 이 배지를 받아보세요"));
 
             // when
             BadgeGrantResult result = sut.resolveGrant(USERNAME, PRIVATE_CODE);
 
             // then
             assertThat(result.granted()).isFalse();
+            assertThat(result.userExists()).isTrue();
             assertThat(result.title()).isEqualTo("Contributor");
             assertThat(result.message()).isEqualTo("PR을 보내고 이 배지를 받아보세요");
         }
@@ -105,7 +107,7 @@ class BadgeGrantServiceTest {
             // given
             // 안내 문구 미등록 배지. 기본 문구 대체는 렌더러 담당.
             given(grantRepo.findGrant(USERNAME, PRIVATE_CODE))
-                    .willReturn(row(false, "Contributor", null));
+                    .willReturn(row(false, true, "Contributor", null));
 
             // when
             BadgeGrantResult result = sut.resolveGrant(USERNAME, PRIVATE_CODE);
@@ -128,6 +130,8 @@ class BadgeGrantServiceTest {
 
             // then
             assertThat(result.granted()).isFalse();
+            // 조회 결과가 없으면 사용자 존재를 알 수 없다. 미가입으로 단정해 404를 내지 않는다.
+            assertThat(result.userExists()).isTrue();
             assertThat(result.title()).isNull();
             assertThat(result.message()).isNull();
         }
@@ -137,7 +141,7 @@ class BadgeGrantServiceTest {
         void 사용가능여부_호출_받은값이바뀌지않고DB조회로전달됨() {
             // given
             given(grantRepo.findGrant(anyString(), anyString()))
-                    .willReturn(row(true, "GPU Card", null));
+                    .willReturn(row(true, true, "GPU Card", null));
             ArgumentCaptor<String> usernameCaptor = ArgumentCaptor.forClass(String.class);
             ArgumentCaptor<String> codeCaptor = ArgumentCaptor.forClass(String.class);
 
@@ -148,6 +152,45 @@ class BadgeGrantServiceTest {
             then(grantRepo).should().findGrant(usernameCaptor.capture(), codeCaptor.capture());
             assertThat(usernameCaptor.getValue()).isEqualTo(USERNAME);
             assertThat(codeCaptor.getValue()).isEqualTo(PUBLIC_CODE);
+        }
+    }
+
+    @Nested
+    @DisplayName("가입되지 않은 사용자 판정")
+    class UserNotFoundTest {
+
+        @Test
+        @DisplayName("사용가능여부_미가입사용자_공개배지여도미가입으로판정")
+        void 사용가능여부_미가입사용자_공개배지여도미가입으로판정() {
+            // given
+            // 공개 배지라 쿼리의 granted는 true지만 users에 행이 없어 userExists가 false다
+            given(grantRepo.findGrant(USERNAME, PUBLIC_CODE))
+                    .willReturn(row(true, false, "GPU Card", null));
+
+            // when
+            BadgeGrantResult result = sut.resolveGrant(USERNAME, PUBLIC_CODE);
+
+            // then
+            assertThat(result.userExists()).isFalse();
+            assertThat(result.granted()).isFalse();
+        }
+
+        @Test
+        @DisplayName("사용가능여부_미가입사용자_자격필요배지_잠금문구없이미가입으로판정")
+        void 사용가능여부_미가입사용자_자격필요배지_잠금문구없이미가입으로판정() {
+            // given
+            given(grantRepo.findGrant(USERNAME, PRIVATE_CODE))
+                    .willReturn(row(false, false, "Contributor", "PR을 보내고 이 배지를 받아보세요"));
+
+            // when
+            BadgeGrantResult result = sut.resolveGrant(USERNAME, PRIVATE_CODE);
+
+            // then
+            // 미가입이 자격 거부보다 우선한다. 잠금 안내 문구를 싣지 않아 렌더러가 잠금 SVG를 그리지 못한다.
+            assertThat(result.userExists()).isFalse();
+            assertThat(result.granted()).isFalse();
+            assertThat(result.title()).isNull();
+            assertThat(result.message()).isNull();
         }
     }
 }
