@@ -13,12 +13,13 @@ public interface UserBadgeGrantRepository
     /**
      * 배지 사용 가능 여부를 DB 왕복 한 번으로 확인한다.
      * <p>
-     * 자격 필요 여부와 자격 보유를 한 쿼리에서 본다. 공개 배지면 EXISTS는 실행되지 않는다.
+     * 자격 필요 여부와 자격 보유를 한 쿼리에서 본다. 공개 배지면 자격 EXISTS는 실행되지 않는다.
      * 자격은 github_id 기준이고 요청은 username이라 users를 조인한다.
+     * 사용자 존재 여부(userExists)도 같은 왕복에서 본다.
      *
      * @param username  배지 주인 GitHub 사용자명 (null 불허)
      * @param badgeCode 정리된 배지 코드 (null 불허)
-     * @return 사용 가능 여부와 안내 문구. 등록되지 않은 배지 코드면 null
+     * @return 사용 가능 여부·사용자 존재 여부·안내 문구. 등록되지 않은 배지 코드면 null
      * @Since 2026-08-10
      */
     @Query(value = """
@@ -29,6 +30,11 @@ public interface UserBadgeGrantRepository
                        WHERE u.username     = :username
                          AND ubg.badge_code = c.code
                    )                AS granted,
+                   EXISTS (
+                       SELECT 1
+                       FROM users u2
+                       WHERE u2.username = :username
+                   )                AS userExists,
                    c.display_name   AS displayName,
                    c.locked_message AS lockedMessage
             FROM badge_catalog c

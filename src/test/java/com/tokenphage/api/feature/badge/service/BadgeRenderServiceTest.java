@@ -19,6 +19,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -162,6 +163,28 @@ class BadgeRenderServiceTest {
             // then
             // 판정을 캐시 뒤로 미루면 자격 회수가 최대 60분간 반영되지 않는다
             then(badgeGrantService).should().resolveGrant(USERNAME, THEME);
+        }
+
+        @Test
+        @DisplayName("배지조회_미가입_USER_NOT_FOUND예외")
+        void 배지조회_미가입_USER_NOT_FOUND예외() {
+            // given
+            given(svgBuilder.normalizeTheme(THEME)).willReturn(THEME);
+            given(badgeGrantService.resolveGrant(USERNAME, THEME))
+                    .willReturn(BadgeGrantResult.userNotFound());
+
+            // when
+            // then
+            assertThatThrownBy(() -> service.getSvg(USERNAME, THEME, MODE))
+                    .isInstanceOf(AppException.class)
+                    .satisfies(ex -> {
+                        assertThat(((AppException) ex).getErrorCode().getCode()).isEqualTo("BADGE_001");
+                        assertThat(((AppException) ex).getErrorCode().getStatus()).isEqualTo(HttpStatus.NOT_FOUND);
+                    });
+            // 미가입은 잠금 SVG 대상이 아니다. 캐시·집계 조회에도 닿지 않는다.
+            then(lockedBadgeTheme).shouldHaveNoInteractions();
+            then(queryService).shouldHaveNoInteractions();
+            then(redis).should(never()).opsForValue();
         }
     }
 

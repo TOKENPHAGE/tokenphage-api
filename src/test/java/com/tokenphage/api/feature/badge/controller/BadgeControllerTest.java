@@ -9,11 +9,14 @@ import static org.mockito.BDDMockito.then;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.tokenphage.api.audit.AuditOutcome;
 import com.tokenphage.api.config.SecurityConfig;
+import com.tokenphage.api.exception.AppException;
+import com.tokenphage.api.feature.badge.exception.BadgeErrorCode;
 import com.tokenphage.api.feature.badge.dto.response.BadgeSvgResponse;
 import com.tokenphage.api.feature.badge.service.BadgeRenderService;
 import org.junit.jupiter.api.DisplayName;
@@ -105,6 +108,22 @@ class BadgeControllerTest {
             mockMvc.perform(get("/badge/{username}", USERNAME))
                     .andExpect(status().isOk())
                     .andExpect(content().string(LOCKED_SVG));
+        }
+
+        @Test
+        @DisplayName("배지조회_미가입_404와BADGE_001본문반환")
+        void 배지조회_미가입_404와BADGE_001본문반환() throws Exception {
+            // given
+            // 미가입은 자격 거부(200 잠금 SVG)와 달리 상태코드로 구분된다.
+            given(badgeRenderService.getSvg(USERNAME, "gpu", "light"))
+                    .willThrow(new AppException(BadgeErrorCode.USER_NOT_FOUND));
+
+            // when
+            // then
+            mockMvc.perform(get("/badge/{username}", USERNAME))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.code").value("BADGE_001"))
+                    .andExpect(jsonPath("$.message").value("User not found."));
         }
 
         @Test

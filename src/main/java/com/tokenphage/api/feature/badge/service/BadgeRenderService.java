@@ -3,8 +3,10 @@ package com.tokenphage.api.feature.badge.service;
 import com.tokenphage.api.domain.badge.BadgeCode;
 import com.tokenphage.api.domain.badge.service.BadgeGrantResult;
 import com.tokenphage.api.domain.badge.service.BadgeGrantService;
+import com.tokenphage.api.exception.AppException;
 import com.tokenphage.api.feature.badge.dto.response.BadgeResponse;
 import com.tokenphage.api.feature.badge.dto.response.BadgeSvgResponse;
+import com.tokenphage.api.feature.badge.exception.BadgeErrorCode;
 import com.tokenphage.api.feature.badge.svg.BadgeMode;
 import com.tokenphage.api.feature.badge.svg.SvgBuilder;
 import com.tokenphage.api.feature.badge.svg.theme.locked.LockedBadgeTheme;
@@ -33,20 +35,16 @@ public class BadgeRenderService {
     /**
      * 사용자 배지 SVG를 반환한다.
      * <p>
-     * theme/mode를 등록된 값으로 정규화한 뒤 캐시 키를 구성한다. 정규화로 캐시 키 카디널리티를
-     * 유한하게 제한하여, 임의 theme/mode 입력에 의한 Redis 키 무한 증식을 방지한다.
-     * 캐시에 값이 있으면 즉시 반환하고, 없으면 DB에서 조회해 SVG를 생성한 뒤 캐시에 저장한다.
-     * 캐시 TTL은 설정값 badge.cache-ttl-minutes를 따른다.
-     *
-     * <p>
-     * 자격이 필요한 배지인데 배지 주인에게 자격이 없으면 잠금 안내 SVG를 대신 반환한다.
-     * 이때 잠금 SVG는 캐시에 저장하지 않으므로 자격을 부여하면 다음 요청에 즉시 반영된다.
+     * theme/mode를 등록된 값으로 정규화해 임의 입력에 의한 캐시 키 증식을 막는다.
+     * 캐시 적중이면 즉시 반환하고, 아니면 조회·생성 후 badge.cache-ttl-minutes 동안 캐시한다.
+     * 자격이 없으면 잠금 SVG를 반환하며, 이 SVG는 캐시하지 않아 부여가 즉시 반영된다.
+     * 배지 주인이 가입돼 있지 않으면 테마와 무관하게 404로 끊는다.
      *
      * @param username 배지를 조회할 GitHub 사용자명 (null 불허)
      * @param theme    배지 스킨 종류 (미등록 값은 기본 테마로 정규화)
      * @param mode     색상 모드 (테마가 지원하지 않는 값은 그 테마의 기본 모드로 정규화)
      * @return SVG 문자열과 자격 판정 결과
-     * @throws com.tokenphage.api.exception.AppException 사용자가 없을 경우 (BADGE_001)
+     * @throws AppException 배지 주인이 가입되지 않았을 경우 (BADGE_001)
      * @Since 2026-05-27
      */
     public BadgeSvgResponse getSvg(String username, String theme, String mode) {
@@ -56,6 +54,13 @@ public class BadgeRenderService {
         // #0. 자격 확인은 캐시 조회보다 먼저. 캐시-자격 불일치를 막고 회수가 즉시 반영된다.
         //     잠금 SVG는 캐시하지 않으므로 부여도 즉시 반영된다.
         BadgeGrantResult grant = badgeGrantService.resolveGrant(username, normalizedTheme);
+
+        // #0-1. 미가입은 자격 거부보다 먼저 끊는다. 공개 테마와 자격 테마의 응답을 404로 통일한다.
+        if (!grant.userExists()) {
+            log.info("Badge owner not registered, returning 404: username={}", username);
+            throw new AppException(BadgeErrorCode.USER_NOT_FOUND);
+        }
+
         if (!grant.granted()) {
             log.info("Badge locked, rendering lock notice: username={}, theme={}", username, normalizedTheme);
             // 잠금 테마 자신의 지원 집합으로 다시 정규화한다 — 원 테마의 악센트 모드를 잠금 테마는 모른다.

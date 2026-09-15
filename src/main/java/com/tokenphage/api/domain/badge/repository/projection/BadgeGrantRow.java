@@ -21,4 +21,7 @@ public interface BadgeGrantRow {
 
     /** 자격이 없을 때 보여줄 안내 문구. NULL이면 호출 측이 기본 문구를 쓴다. */
     String getLockedMessage();
+
+    /** 배지 주인이 가입된 사용자면 true. primitive다 — EXISTS는 NULL을 반환하지 않는다. */
+    boolean getUserExists();
 }
