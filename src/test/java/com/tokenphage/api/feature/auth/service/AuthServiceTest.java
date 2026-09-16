@@ -28,11 +28,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
 
 /**
  * AuthService 의 createChallenge "저장 동작"과 verify() 플로우를 검증한다.
@@ -60,7 +59,7 @@ class AuthServiceTest {
         jwtIssuer = mock(JwtIssuer.class);
         redis = mock(StringRedisTemplate.class);
         valueOps = mock(ValueOperations.class);
-        when(redis.opsForValue()).thenReturn(valueOps);
+        given(redis.opsForValue()).willReturn(valueOps);
 
         // 생성자 인자 순서 = 필드 선언 순서: UserService, GistVerificationService, JwtIssuer, StringRedisTemplate
         authService = new AuthService(userService, gistVerification, jwtIssuer, redis);
@@ -85,7 +84,7 @@ class AuthServiceTest {
             assertThat(response.challenge()).startsWith("tknphg_");
             assertThat(response.expiresAt()).isNotNull();
             // Redis set 이 키 prefix + TTL 과 함께 호출됐는지 확인
-            verify(valueOps).set(
+            then(valueOps).should().set(
                 eq("auth:challenge:octocat"),
                 eq(response.challenge()),
                 eq(Duration.ofMinutes(TTL_MINUTES))
@@ -103,7 +102,7 @@ class AuthServiceTest {
             authService.createChallenge(req);
 
             // then: 캡처한 키가 소문자화된 형태인지 확인
-            verify(valueOps).set(keyCaptor.capture(), anyString(), any(Duration.class));
+            then(valueOps).should().set(keyCaptor.capture(), anyString(), any(Duration.class));
             assertThat(keyCaptor.getValue()).isEqualTo("auth:challenge:octocat");
         }
 
@@ -113,14 +112,14 @@ class AuthServiceTest {
             // given: 동일 사용자의 기존 challenge 가 Redis 에 남아 있다 (검증 실패 후 재시도 상황)
             ChallengeRequest req = new ChallengeRequest("octocat");
             String existing = "tknphg_existing0challenge";
-            when(valueOps.get("auth:challenge:octocat")).thenReturn(existing);
+            given(valueOps.get("auth:challenge:octocat")).willReturn(existing);
 
             // when
             ChallengeResponse response = authService.createChallenge(req);
 
             // then: 반환 challenge 가 기존 값과 동일하고, set 은 같은 값 + 갱신된 TTL 로 호출된다
             assertThat(response.challenge()).isEqualTo(existing);
-            verify(valueOps).set(
+            then(valueOps).should().set(
                 eq("auth:challenge:octocat"),
                 eq(existing),
                 eq(Duration.ofMinutes(TTL_MINUTES))
@@ -137,7 +136,7 @@ class AuthServiceTest {
         void 검증_챌린지없음_CHALLENGE_EXPIRED() {
             // given: get 이 null 을 반환하도록 stub
             VerifyRequest req = new VerifyRequest("octocat", "gist-123");
-            when(valueOps.get("auth:challenge:octocat")).thenReturn(null);
+            given(valueOps.get("auth:challenge:octocat")).willReturn(null);
 
             // when & then
             assertThatThrownBy(() -> authService.verify(req))
@@ -146,8 +145,10 @@ class AuthServiceTest {
                 .isEqualTo(AuthErrorCode.CHALLENGE_EXPIRED);
 
             // gist 검증/저장/발급 단계는 진입하지 않아야 한다
-            verifyNoInteractions(gistVerification, jwtIssuer, userService);
-            verify(redis, never()).delete(anyString());
+            then(gistVerification).shouldHaveNoInteractions();
+            then(jwtIssuer).shouldHaveNoInteractions();
+            then(userService).shouldHaveNoInteractions();
+            then(redis).should(never()).delete(anyString());
         }
 
         @ParameterizedTest(name = "무효 입력: username=\"{0}\", gistId=\"{1}\"")
@@ -171,8 +172,10 @@ class AuthServiceTest {
                 .isEqualTo(AuthErrorCode.INVALID_USERNAME);
 
             // 어떤 의존성도 사용되지 않아야 한다 (Redis get 도 호출 안 됨)
-            verifyNoInteractions(gistVerification, jwtIssuer, userService);
-            verify(valueOps, never()).get(anyString());
+            then(gistVerification).shouldHaveNoInteractions();
+            then(jwtIssuer).shouldHaveNoInteractions();
+            then(userService).shouldHaveNoInteractions();
+            then(valueOps).should(never()).get(anyString());
         }
 
         @Test
@@ -188,9 +191,9 @@ class AuthServiceTest {
                 new GistOwnerResponse(-42L, "octocat"),
                 null
             );
-            when(valueOps.get("auth:challenge:octocat")).thenReturn(challenge);
-            when(gistVerification.verify(req, challenge)).thenReturn(gist);
-            when(jwtIssuer.issue(-42L, "octocat")).thenReturn(issuedToken);
+            given(valueOps.get("auth:challenge:octocat")).willReturn(challenge);
+            given(gistVerification.verify(req, challenge)).willReturn(gist);
+            given(jwtIssuer.issue(-42L, "octocat")).willReturn(issuedToken);
 
             // when
             TokenResponse response = authService.verify(req);
@@ -200,9 +203,9 @@ class AuthServiceTest {
             assertThat(response.githubId()).isEqualTo(-42L);
             assertThat(response.username()).isEqualTo("octocat");
             // Redis 챌린지 삭제 + 사용자 저장 + JWT 발급 호출 검증
-            verify(redis).delete("auth:challenge:octocat");
-            verify(userService).saveUser(-42L, "octocat");
-            verify(jwtIssuer).issue(-42L, "octocat");
+            then(redis).should().delete("auth:challenge:octocat");
+            then(userService).should().saveUser(-42L, "octocat");
+            then(jwtIssuer).should().issue(-42L, "octocat");
         }
 
         @Test
@@ -211,9 +214,9 @@ class AuthServiceTest {
             // given: gistVerification 이 OWNER_MISMATCH 를 던지도록 stub
             VerifyRequest req = new VerifyRequest("octocat", "gist-123");
             String challenge = "tknphg_deadbeefcafe1234";
-            when(valueOps.get("auth:challenge:octocat")).thenReturn(challenge);
-            when(gistVerification.verify(req, challenge))
-                .thenThrow(new AppException(AuthErrorCode.OWNER_MISMATCH));
+            given(valueOps.get("auth:challenge:octocat")).willReturn(challenge);
+            given(gistVerification.verify(req, challenge))
+                .willThrow(new AppException(AuthErrorCode.OWNER_MISMATCH));
 
             // when & then
             assertThatThrownBy(() -> authService.verify(req))
@@ -222,9 +225,9 @@ class AuthServiceTest {
                 .isEqualTo(AuthErrorCode.OWNER_MISMATCH);
 
             // 검증 실패 이후 단계는 수행되지 않아야 한다
-            verify(redis, never()).delete(anyString());
-            verify(userService, never()).saveUser(anyLong(), anyString());
-            verify(jwtIssuer, never()).issue(anyLong(), anyString());
+            then(redis).should(never()).delete(anyString());
+            then(userService).should(never()).saveUser(anyLong(), anyString());
+            then(jwtIssuer).should(never()).issue(anyLong(), anyString());
         }
     }
 }

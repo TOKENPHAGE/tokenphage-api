@@ -24,12 +24,11 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
 
 /**
  * TokenUsageRecordService.saveRecords의 레코드 저장(upsert) 흐름과 입력 파싱 실패를 검증한다.
@@ -55,7 +54,7 @@ class TokenUsageRecordServiceTest {
         void 레코드저장_정상2건_upsert2회호출() {
             // given
             Jwt jwt = mock(Jwt.class);
-            when(jwt.getSubject()).thenReturn("-42");
+            given(jwt.getSubject()).willReturn("-42");
             TokenRecordRequest r1 = new TokenRecordRequest("2026-06-01", "claude-opus", 10L, 20L, 30L, 40L);
             TokenRecordRequest r2 = new TokenRecordRequest("2026-06-02", "claude-sonnet", 1L, 2L, 3L, 4L);
             SyncRequest req = new SyncRequest(VALID_DEVICE_ID, List.of(r1, r2));
@@ -64,7 +63,7 @@ class TokenUsageRecordServiceTest {
             service.saveRecords(jwt, req);
 
             // then
-            verify(tokenRepo, times(2)).upsertRecord(
+            then(tokenRepo).should(times(2)).upsertRecord(
                 anyLong(), any(UUID.class), any(LocalDate.class), anyString(),
                 anyLong(), anyLong(), anyLong(), anyLong());
         }
@@ -74,7 +73,7 @@ class TokenUsageRecordServiceTest {
         void 레코드저장_첫레코드인자_정확히전달() {
             // given
             Jwt jwt = mock(Jwt.class);
-            when(jwt.getSubject()).thenReturn("-42");
+            given(jwt.getSubject()).willReturn("-42");
             TokenRecordRequest r1 = new TokenRecordRequest("2026-06-01", "claude-opus", 10L, 20L, 30L, 40L);
             TokenRecordRequest r2 = new TokenRecordRequest("2026-06-02", "claude-sonnet", 1L, 2L, 3L, 4L);
             SyncRequest req = new SyncRequest(VALID_DEVICE_ID, List.of(r1, r2));
@@ -91,7 +90,7 @@ class TokenUsageRecordServiceTest {
             ArgumentCaptor<Long> outputCaptor = ArgumentCaptor.forClass(Long.class);
             ArgumentCaptor<Long> cacheReadCaptor = ArgumentCaptor.forClass(Long.class);
             ArgumentCaptor<Long> cacheCreateCaptor = ArgumentCaptor.forClass(Long.class);
-            verify(tokenRepo, times(2)).upsertRecord(
+            then(tokenRepo).should(times(2)).upsertRecord(
                 githubIdCaptor.capture(),
                 deviceIdCaptor.capture(),
                 dateCaptor.capture(),
@@ -121,14 +120,14 @@ class TokenUsageRecordServiceTest {
         void 레코드저장_빈목록_호출없음() {
             // given
             Jwt jwt = mock(Jwt.class);
-            when(jwt.getSubject()).thenReturn("-42");
+            given(jwt.getSubject()).willReturn("-42");
             SyncRequest req = new SyncRequest(VALID_DEVICE_ID, List.of());
 
             // when
             service.saveRecords(jwt, req);
 
             // then
-            verify(tokenRepo, never()).upsertRecord(
+            then(tokenRepo).should(never()).upsertRecord(
                 anyLong(), any(UUID.class), any(LocalDate.class), anyString(),
                 anyLong(), anyLong(), anyLong(), anyLong());
         }
@@ -138,7 +137,7 @@ class TokenUsageRecordServiceTest {
         void 레코드저장_단건_정확히1회호출() {
             // given
             Jwt jwt = mock(Jwt.class);
-            when(jwt.getSubject()).thenReturn("-42");
+            given(jwt.getSubject()).willReturn("-42");
             TokenRecordRequest only = new TokenRecordRequest("2026-06-01", "claude-opus", 5L, 6L, 7L, 8L);
             SyncRequest req = new SyncRequest(VALID_DEVICE_ID, List.of(only));
 
@@ -146,7 +145,7 @@ class TokenUsageRecordServiceTest {
             service.saveRecords(jwt, req);
 
             // then
-            verify(tokenRepo, times(1)).upsertRecord(
+            then(tokenRepo).should(times(1)).upsertRecord(
                 eq(-42L),
                 eq(UUID.fromString(VALID_DEVICE_ID)),
                 eq(LocalDate.parse("2026-06-01")),
@@ -167,14 +166,14 @@ class TokenUsageRecordServiceTest {
         void 레코드저장_잘못된UUID_예외발생() {
             // given
             Jwt jwt = mock(Jwt.class);
-            when(jwt.getSubject()).thenReturn("-42");
+            given(jwt.getSubject()).willReturn("-42");
             TokenRecordRequest r = new TokenRecordRequest("2026-06-01", "claude-opus", 10L, 20L, 30L, 40L);
             SyncRequest req = new SyncRequest("not-a-valid-uuid", List.of(r));
 
             // when / then
             assertThatThrownBy(() -> service.saveRecords(jwt, req))
                 .isInstanceOf(IllegalArgumentException.class);
-            verifyNoInteractions(tokenRepo);
+            then(tokenRepo).shouldHaveNoInteractions();
         }
 
         @Test
@@ -182,14 +181,14 @@ class TokenUsageRecordServiceTest {
         void 레코드저장_잘못된날짜_예외발생() {
             // given
             Jwt jwt = mock(Jwt.class);
-            when(jwt.getSubject()).thenReturn("-42");
+            given(jwt.getSubject()).willReturn("-42");
             TokenRecordRequest badDate = new TokenRecordRequest("2026-13-99", "claude-opus", 10L, 20L, 30L, 40L);
             SyncRequest req = new SyncRequest(VALID_DEVICE_ID, List.of(badDate));
 
             // when / then
             assertThatThrownBy(() -> service.saveRecords(jwt, req))
                 .isInstanceOf(DateTimeParseException.class);
-            verifyNoInteractions(tokenRepo);
+            then(tokenRepo).shouldHaveNoInteractions();
         }
 
         @Test
@@ -197,14 +196,14 @@ class TokenUsageRecordServiceTest {
         void 레코드저장_subject비숫자_예외발생() {
             // given
             Jwt jwt = mock(Jwt.class);
-            when(jwt.getSubject()).thenReturn("not-a-number");
+            given(jwt.getSubject()).willReturn("not-a-number");
             TokenRecordRequest r = new TokenRecordRequest("2026-06-01", "claude-opus", 10L, 20L, 30L, 40L);
             SyncRequest req = new SyncRequest(VALID_DEVICE_ID, List.of(r));
 
             // when / then
             assertThatThrownBy(() -> service.saveRecords(jwt, req))
                 .isInstanceOf(NumberFormatException.class);
-            verifyNoInteractions(tokenRepo);
+            then(tokenRepo).shouldHaveNoInteractions();
         }
     }
 }

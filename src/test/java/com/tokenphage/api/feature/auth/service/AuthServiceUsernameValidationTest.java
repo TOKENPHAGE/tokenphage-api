@@ -12,8 +12,8 @@ import org.springframework.data.redis.core.ValueOperations;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 /**
  * GitHub 사용자명 정책 검증을, 공개 진입점 createChallenge 를 통해 확인하는 테스트.
@@ -71,7 +71,7 @@ class AuthServiceUsernameValidationTest {
     @SuppressWarnings("unchecked")
     private StringRedisTemplate redisMock() {
         StringRedisTemplate redis = mock(StringRedisTemplate.class);
-        when(redis.opsForValue()).thenReturn(mock(ValueOperations.class));
+        given(redis.opsForValue()).willReturn(mock(ValueOperations.class));
         return redis;
     }
 }

@@ -31,12 +31,12 @@ import java.util.Set;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.within;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.never;
 
 /**
  * BadgeQueryService.query / calcCacheHitRate 검증: 사용자 미존재 예외, 정상 응답 조립,
@@ -88,16 +88,16 @@ class BadgeQueryServiceTest {
     /** DailyUsageRow 프로젝션 mock (날짜/총합 getter stub). */
     private DailyUsageRow dailyRow(String date, long total) {
         DailyUsageRow row = mock(DailyUsageRow.class);
-        when(row.getDate()).thenReturn(date);
-        when(row.getTotal()).thenReturn(total);
+        given(row.getDate()).willReturn(date);
+        given(row.getTotal()).willReturn(total);
         return row;
     }
 
     /** ModelUsageRow 프로젝션 mock (모델/총합 getter stub). */
     private ModelUsageRow modelRow(String model, long total) {
         ModelUsageRow row = mock(ModelUsageRow.class);
-        when(row.getModel()).thenReturn(model);
-        when(row.getTotal()).thenReturn(total);
+        given(row.getModel()).willReturn(model);
+        given(row.getTotal()).willReturn(total);
         return row;
     }
 
@@ -119,7 +119,7 @@ class BadgeQueryServiceTest {
         @DisplayName("배지조회_사용자없음_USER_NOT_FOUND예외")
         void 배지조회_사용자없음_USER_NOT_FOUND예외() {
             // given
-            when(userRepo.findByUsername("ghost")).thenReturn(Optional.empty());
+            given(userRepo.findByUsername("ghost")).willReturn(Optional.empty());
 
             // when
             // then
@@ -128,7 +128,7 @@ class BadgeQueryServiceTest {
                     .satisfies(ex -> assertThat(((AppException) ex).getErrorCode())
                             .isEqualTo(BadgeErrorCode.USER_NOT_FOUND));
             // 사용자 미존재 시 토큰 집계 조회는 전혀 일어나지 않아야 한다
-            verifyNoInteractions(tokenRepo);
+            then(tokenRepo).shouldHaveNoInteractions();
         }
     }
 
@@ -146,14 +146,14 @@ class BadgeQueryServiceTest {
             ModelUsageRow opus = modelRow("opus", 700L);
             ModelUsageRow sonnet = modelRow("sonnet", 300L);
             CacheTokenSum cache = cacheRow(70L, 20L, 10L);
-            when(userRepo.findByUsername(USERNAME)).thenReturn(Optional.of(user()));
-            when(tokenRepo.sumTotalTokens(GITHUB_ID)).thenReturn(1_000L);
-            when(tokenRepo.findDailyTotalsBetween(GITHUB_ID, today.minusDays(29), today))
-                    .thenReturn(List.of(daily));
-            when(tokenRepo.findTop5Models(GITHUB_ID))
-                    .thenReturn(List.of(opus, sonnet));
-            when(tokenRepo.sumCacheTokens(GITHUB_ID))
-                    .thenReturn(List.of(cache));
+            given(userRepo.findByUsername(USERNAME)).willReturn(Optional.of(user()));
+            given(tokenRepo.sumTotalTokens(GITHUB_ID)).willReturn(1_000L);
+            given(tokenRepo.findDailyTotalsBetween(GITHUB_ID, today.minusDays(29), today))
+                    .willReturn(List.of(daily));
+            given(tokenRepo.findTop5Models(GITHUB_ID))
+                    .willReturn(List.of(opus, sonnet));
+            given(tokenRepo.sumCacheTokens(GITHUB_ID))
+                    .willReturn(List.of(cache));
 
             // when
             BadgeResponse res = service.query(USERNAME, BADGE_CODE, GPU_NEEDS);
@@ -176,12 +176,12 @@ class BadgeQueryServiceTest {
         void 배지조회_상위모델없음_빈리스트반환() {
             // given
             LocalDate today = today();
-            when(userRepo.findByUsername(USERNAME)).thenReturn(Optional.of(user()));
-            when(tokenRepo.sumTotalTokens(GITHUB_ID)).thenReturn(0L);
-            when(tokenRepo.findDailyTotalsBetween(GITHUB_ID, today.minusDays(29), today))
-                    .thenReturn(List.of());
-            when(tokenRepo.findTop5Models(GITHUB_ID)).thenReturn(List.of());
-            when(tokenRepo.sumCacheTokens(GITHUB_ID)).thenReturn(List.of());
+            given(userRepo.findByUsername(USERNAME)).willReturn(Optional.of(user()));
+            given(tokenRepo.sumTotalTokens(GITHUB_ID)).willReturn(0L);
+            given(tokenRepo.findDailyTotalsBetween(GITHUB_ID, today.minusDays(29), today))
+                    .willReturn(List.of());
+            given(tokenRepo.findTop5Models(GITHUB_ID)).willReturn(List.of());
+            given(tokenRepo.sumCacheTokens(GITHUB_ID)).willReturn(List.of());
 
             // when
             BadgeResponse res = service.query(USERNAME, BADGE_CODE, GPU_NEEDS);
@@ -200,12 +200,12 @@ class BadgeQueryServiceTest {
         void 누적토큰_sumTotalTokensNull_0반환() {
             // given
             LocalDate today = today();
-            when(userRepo.findByUsername(USERNAME)).thenReturn(Optional.of(user()));
-            when(tokenRepo.sumTotalTokens(GITHUB_ID)).thenReturn(null);
-            when(tokenRepo.findDailyTotalsBetween(GITHUB_ID, today.minusDays(29), today))
-                    .thenReturn(List.of());
-            when(tokenRepo.findTop5Models(GITHUB_ID)).thenReturn(List.of());
-            when(tokenRepo.sumCacheTokens(GITHUB_ID)).thenReturn(List.of());
+            given(userRepo.findByUsername(USERNAME)).willReturn(Optional.of(user()));
+            given(tokenRepo.sumTotalTokens(GITHUB_ID)).willReturn(null);
+            given(tokenRepo.findDailyTotalsBetween(GITHUB_ID, today.minusDays(29), today))
+                    .willReturn(List.of());
+            given(tokenRepo.findTop5Models(GITHUB_ID)).willReturn(List.of());
+            given(tokenRepo.sumCacheTokens(GITHUB_ID)).willReturn(List.of());
 
             // when
             BadgeResponse res = service.query(USERNAME, BADGE_CODE, GPU_NEEDS);
@@ -219,12 +219,12 @@ class BadgeQueryServiceTest {
         void 누적토큰_정상값_그대로반환() {
             // given
             LocalDate today = today();
-            when(userRepo.findByUsername(USERNAME)).thenReturn(Optional.of(user()));
-            when(tokenRepo.sumTotalTokens(GITHUB_ID)).thenReturn(987_654L);
-            when(tokenRepo.findDailyTotalsBetween(GITHUB_ID, today.minusDays(29), today))
-                    .thenReturn(List.of());
-            when(tokenRepo.findTop5Models(GITHUB_ID)).thenReturn(List.of());
-            when(tokenRepo.sumCacheTokens(GITHUB_ID)).thenReturn(List.of());
+            given(userRepo.findByUsername(USERNAME)).willReturn(Optional.of(user()));
+            given(tokenRepo.sumTotalTokens(GITHUB_ID)).willReturn(987_654L);
+            given(tokenRepo.findDailyTotalsBetween(GITHUB_ID, today.minusDays(29), today))
+                    .willReturn(List.of());
+            given(tokenRepo.findTop5Models(GITHUB_ID)).willReturn(List.of());
+            given(tokenRepo.sumCacheTokens(GITHUB_ID)).willReturn(List.of());
 
             // when
             BadgeResponse res = service.query(USERNAME, BADGE_CODE, GPU_NEEDS);
@@ -249,13 +249,13 @@ class BadgeQueryServiceTest {
             // 중첩 stubbing 방지를 위해 mock row를 먼저 생성
             DailyUsageRow midRow = dailyRow(midStr, 42L);
             DailyUsageRow todayRow = dailyRow(todayStr, 99L);
-            when(userRepo.findByUsername(USERNAME)).thenReturn(Optional.of(user()));
-            when(tokenRepo.sumTotalTokens(GITHUB_ID)).thenReturn(0L);
+            given(userRepo.findByUsername(USERNAME)).willReturn(Optional.of(user()));
+            given(tokenRepo.sumTotalTokens(GITHUB_ID)).willReturn(0L);
             // 30일 중 2일치만 데이터가 존재
-            when(tokenRepo.findDailyTotalsBetween(GITHUB_ID, from, today))
-                    .thenReturn(List.of(midRow, todayRow));
-            when(tokenRepo.findTop5Models(GITHUB_ID)).thenReturn(List.of());
-            when(tokenRepo.sumCacheTokens(GITHUB_ID)).thenReturn(List.of());
+            given(tokenRepo.findDailyTotalsBetween(GITHUB_ID, from, today))
+                    .willReturn(List.of(midRow, todayRow));
+            given(tokenRepo.findTop5Models(GITHUB_ID)).willReturn(List.of());
+            given(tokenRepo.sumCacheTokens(GITHUB_ID)).willReturn(List.of());
 
             // when
             BadgeResponse res = service.query(USERNAME, BADGE_CODE, GPU_NEEDS);
@@ -279,12 +279,12 @@ class BadgeQueryServiceTest {
         void 히트바_조회결과없음_전부0인30개구성() {
             // given
             LocalDate today = today();
-            when(userRepo.findByUsername(USERNAME)).thenReturn(Optional.of(user()));
-            when(tokenRepo.sumTotalTokens(GITHUB_ID)).thenReturn(0L);
-            when(tokenRepo.findDailyTotalsBetween(GITHUB_ID, today.minusDays(29), today))
-                    .thenReturn(List.of());
-            when(tokenRepo.findTop5Models(GITHUB_ID)).thenReturn(List.of());
-            when(tokenRepo.sumCacheTokens(GITHUB_ID)).thenReturn(List.of());
+            given(userRepo.findByUsername(USERNAME)).willReturn(Optional.of(user()));
+            given(tokenRepo.sumTotalTokens(GITHUB_ID)).willReturn(0L);
+            given(tokenRepo.findDailyTotalsBetween(GITHUB_ID, today.minusDays(29), today))
+                    .willReturn(List.of());
+            given(tokenRepo.findTop5Models(GITHUB_ID)).willReturn(List.of());
+            given(tokenRepo.sumCacheTokens(GITHUB_ID)).willReturn(List.of());
 
             // when
             BadgeResponse res = service.query(USERNAME, BADGE_CODE, GPU_NEEDS);
@@ -302,12 +302,12 @@ class BadgeQueryServiceTest {
         /** 캐시 히트율 검증을 위한 공통 stub: 사용자/누적/히트바/모델은 비우고 cacheRows만 주입. */
         private void stubBaseWith(List<CacheTokenSum> cacheRows) {
             LocalDate today = today();
-            when(userRepo.findByUsername(USERNAME)).thenReturn(Optional.of(user()));
-            when(tokenRepo.sumTotalTokens(GITHUB_ID)).thenReturn(0L);
-            when(tokenRepo.findDailyTotalsBetween(GITHUB_ID, today.minusDays(29), today))
-                    .thenReturn(List.of());
-            when(tokenRepo.findTop5Models(GITHUB_ID)).thenReturn(List.of());
-            when(tokenRepo.sumCacheTokens(GITHUB_ID)).thenReturn(cacheRows);
+            given(userRepo.findByUsername(USERNAME)).willReturn(Optional.of(user()));
+            given(tokenRepo.sumTotalTokens(GITHUB_ID)).willReturn(0L);
+            given(tokenRepo.findDailyTotalsBetween(GITHUB_ID, today.minusDays(29), today))
+                    .willReturn(List.of());
+            given(tokenRepo.findTop5Models(GITHUB_ID)).willReturn(List.of());
+            given(tokenRepo.sumCacheTokens(GITHUB_ID)).willReturn(cacheRows);
         }
 
         @Test
@@ -375,9 +375,9 @@ class BadgeQueryServiceTest {
             // given
             // 연간 계열(DAILY_1Y/STREAK_DAYS/YEAR_TOKENS)만 요구 → 일별 쿼리는 365일 창으로 1회
             LocalDate today = today();
-            when(userRepo.findByUsername(USERNAME)).thenReturn(Optional.of(user()));
-            when(tokenRepo.findDailyTotalsBetween(GITHUB_ID, today.minusDays(364), today))
-                    .thenReturn(List.of());
+            given(userRepo.findByUsername(USERNAME)).willReturn(Optional.of(user()));
+            given(tokenRepo.findDailyTotalsBetween(GITHUB_ID, today.minusDays(364), today))
+                    .willReturn(List.of());
 
             // when
             service.query(USERNAME, BADGE_CODE, EnumSet.of(
@@ -385,10 +385,10 @@ class BadgeQueryServiceTest {
 
             // then
             // 일별 쿼리는 365일 창으로 1회 호출되고, 통계 3쿼리는 전혀 실행되지 않아야 한다
-            verify(tokenRepo).findDailyTotalsBetween(GITHUB_ID, today.minusDays(364), today);
-            verify(tokenRepo, never()).findTop5Models(GITHUB_ID);
-            verify(tokenRepo, never()).sumCacheTokens(GITHUB_ID);
-            verify(tokenRepo, never()).sumTotalTokens(GITHUB_ID);
+            then(tokenRepo).should().findDailyTotalsBetween(GITHUB_ID, today.minusDays(364), today);
+            then(tokenRepo).should(never()).findTop5Models(GITHUB_ID);
+            then(tokenRepo).should(never()).sumCacheTokens(GITHUB_ID);
+            then(tokenRepo).should(never()).sumTotalTokens(GITHUB_ID);
         }
 
         @Test
@@ -397,18 +397,18 @@ class BadgeQueryServiceTest {
             // given
             // gpu 기본 4종 → 히트바 30일 창 유지, 연간 필드는 빈값
             LocalDate today = today();
-            when(userRepo.findByUsername(USERNAME)).thenReturn(Optional.of(user()));
-            when(tokenRepo.sumTotalTokens(GITHUB_ID)).thenReturn(0L);
-            when(tokenRepo.findDailyTotalsBetween(GITHUB_ID, today.minusDays(29), today))
-                    .thenReturn(List.of());
-            when(tokenRepo.findTop5Models(GITHUB_ID)).thenReturn(List.of());
-            when(tokenRepo.sumCacheTokens(GITHUB_ID)).thenReturn(List.of());
+            given(userRepo.findByUsername(USERNAME)).willReturn(Optional.of(user()));
+            given(tokenRepo.sumTotalTokens(GITHUB_ID)).willReturn(0L);
+            given(tokenRepo.findDailyTotalsBetween(GITHUB_ID, today.minusDays(29), today))
+                    .willReturn(List.of());
+            given(tokenRepo.findTop5Models(GITHUB_ID)).willReturn(List.of());
+            given(tokenRepo.sumCacheTokens(GITHUB_ID)).willReturn(List.of());
 
             // when
             BadgeResponse res = service.query(USERNAME, BADGE_CODE, GPU_NEEDS);
 
             // then
-            verify(tokenRepo).findDailyTotalsBetween(GITHUB_ID, today.minusDays(29), today);
+            then(tokenRepo).should().findDailyTotalsBetween(GITHUB_ID, today.minusDays(29), today);
             assertThat(res.daily1y()).isEmpty();
             assertThat(res.streakDays()).isZero();
             assertThat(res.yearTokens()).isZero();
@@ -420,9 +420,9 @@ class BadgeQueryServiceTest {
             // given
             LocalDate today = today();
             DailyUsageRow todayRow = dailyRow(today.toString(), 500L);
-            when(userRepo.findByUsername(USERNAME)).thenReturn(Optional.of(user()));
-            when(tokenRepo.findDailyTotalsBetween(GITHUB_ID, today.minusDays(364), today))
-                    .thenReturn(List.of(todayRow));
+            given(userRepo.findByUsername(USERNAME)).willReturn(Optional.of(user()));
+            given(tokenRepo.findDailyTotalsBetween(GITHUB_ID, today.minusDays(364), today))
+                    .willReturn(List.of(todayRow));
 
             // when
             BadgeResponse res = service.query(USERNAME, BADGE_CODE, EnumSet.of(BadgeDataNeed.DAILY_1Y));
@@ -448,16 +448,16 @@ class BadgeQueryServiceTest {
             String midStr = today.minusDays(15).toString();
             DailyUsageRow midRow = dailyRow(midStr, 42L);
             DailyUsageRow todayRow = dailyRow(todayStr, 99L);
-            when(userRepo.findByUsername(USERNAME)).thenReturn(Optional.of(user()));
-            when(tokenRepo.findDailyTotalsBetween(GITHUB_ID, today.minusDays(364), today))
-                    .thenReturn(List.of(midRow, todayRow));
+            given(userRepo.findByUsername(USERNAME)).willReturn(Optional.of(user()));
+            given(tokenRepo.findDailyTotalsBetween(GITHUB_ID, today.minusDays(364), today))
+                    .willReturn(List.of(midRow, todayRow));
 
             // when
             BadgeResponse res = service.query(USERNAME, BADGE_CODE,
                     EnumSet.of(BadgeDataNeed.DAILY_30D, BadgeDataNeed.DAILY_1Y));
 
             // then
-            verify(tokenRepo).findDailyTotalsBetween(GITHUB_ID, today.minusDays(364), today);
+            then(tokenRepo).should().findDailyTotalsBetween(GITHUB_ID, today.minusDays(364), today);
             assertThat(res.daily30d()).hasSize(30);
             assertThat(res.daily30d().get(29).date()).isEqualTo(todayStr);
             assertThat(res.daily30d().get(29).total()).isEqualTo(99L);
@@ -472,9 +472,9 @@ class BadgeQueryServiceTest {
 
         /** streak 요구(YEAR 계열) 시나리오 공통 stub: 365일 창 일별 rows만 주입. */
         private void stubYearRows(LocalDate today, List<DailyUsageRow> rows) {
-            when(userRepo.findByUsername(USERNAME)).thenReturn(Optional.of(user()));
-            when(tokenRepo.findDailyTotalsBetween(GITHUB_ID, today.minusDays(364), today))
-                    .thenReturn(rows);
+            given(userRepo.findByUsername(USERNAME)).willReturn(Optional.of(user()));
+            given(tokenRepo.findDailyTotalsBetween(GITHUB_ID, today.minusDays(364), today))
+                    .willReturn(rows);
         }
 
         @Test
@@ -593,8 +593,8 @@ class BadgeQueryServiceTest {
         void 스냅샷_요구시_PK조회1회payload반환() {
             // given
             String payload = "{\"signupRank\":1}";
-            when(userRepo.findByUsername(USERNAME)).thenReturn(Optional.of(user()));
-            when(snapshotRepo.findPayload(GITHUB_ID, "beta-tester")).thenReturn(payload);
+            given(userRepo.findByUsername(USERNAME)).willReturn(Optional.of(user()));
+            given(snapshotRepo.findPayload(GITHUB_ID, "beta-tester")).willReturn(payload);
 
             // when
             BadgeResponse res = service.query(USERNAME, "beta-tester",
@@ -603,8 +603,8 @@ class BadgeQueryServiceTest {
             // then
             // 스냅샷만 요구하면 토큰 집계 쿼리는 전혀 실행되지 않는다
             assertThat(res.snapshot()).isEqualTo(payload);
-            verify(snapshotRepo).findPayload(GITHUB_ID, "beta-tester");
-            verifyNoInteractions(tokenRepo);
+            then(snapshotRepo).should().findPayload(GITHUB_ID, "beta-tester");
+            then(tokenRepo).shouldHaveNoInteractions();
         }
 
         @Test
@@ -612,14 +612,14 @@ class BadgeQueryServiceTest {
         void 스냅샷_미요구_조회안함() {
             // given
             // BADGE_SNAPSHOT을 요구하지 않는 테마의 경로 (경계)
-            when(userRepo.findByUsername(USERNAME)).thenReturn(Optional.of(user()));
+            given(userRepo.findByUsername(USERNAME)).willReturn(Optional.of(user()));
 
             // when
             BadgeResponse res = service.query(USERNAME, BADGE_CODE, EnumSet.noneOf(BadgeDataNeed.class));
 
             // then
             assertThat(res.snapshot()).isEmpty();
-            verifyNoInteractions(snapshotRepo);
+            then(snapshotRepo).shouldHaveNoInteractions();
         }
 
         @Test
@@ -627,8 +627,8 @@ class BadgeQueryServiceTest {
         void 스냅샷_행없음_빈문자열() {
             // given
             // 자격은 있는데 스냅샷 적재가 누락된 사용자 (경계)
-            when(userRepo.findByUsername(USERNAME)).thenReturn(Optional.of(user()));
-            when(snapshotRepo.findPayload(GITHUB_ID, "beta-tester")).thenReturn(null);
+            given(userRepo.findByUsername(USERNAME)).willReturn(Optional.of(user()));
+            given(snapshotRepo.findPayload(GITHUB_ID, "beta-tester")).willReturn(null);
 
             // when
             BadgeResponse res = service.query(USERNAME, "beta-tester",

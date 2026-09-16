@@ -8,7 +8,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.mockito.Mockito.verify;
+import static org.mockito.BDDMockito.then;
 
 /**
  * UserService.saveUser 동작을 검증한다.
@@ -33,6 +33,6 @@ class UserServiceTest {
         userService.saveUser(githubId, username);
 
         // then
-        verify(userRepo).upsert(githubId, username);
+        then(userRepo).should().upsert(githubId, username);
     }
 }

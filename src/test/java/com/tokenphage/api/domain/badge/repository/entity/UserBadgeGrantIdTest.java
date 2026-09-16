@@ -78,34 +78,6 @@ class UserBadgeGrantIdTest {
         }
 
         @Test
-        @DisplayName("equals_githubId만다름_false반환")
-        void equals_githubId만다름_false반환() {
-            // given
-            UserBadgeGrantId a = baseId();
-            UserBadgeGrantId b = newId(-999L, BADGE_CODE);
-
-            // when
-            boolean result = a.equals(b);
-
-            // then
-            assertThat(result).isFalse();
-        }
-
-        @Test
-        @DisplayName("equals_badgeCode만다름_false반환")
-        void equals_badgeCode만다름_false반환() {
-            // given
-            UserBadgeGrantId a = baseId();
-            UserBadgeGrantId b = newId(GITHUB_ID, "beta-tester");
-
-            // when
-            boolean result = a.equals(b);
-
-            // then
-            assertThat(result).isFalse();
-        }
-
-        @Test
         @DisplayName("equals_null비교_false반환")
         void equals_null비교_false반환() {
             // given

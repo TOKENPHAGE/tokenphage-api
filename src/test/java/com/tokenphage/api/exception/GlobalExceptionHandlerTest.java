@@ -3,19 +3,22 @@ package com.tokenphage.api.exception;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpInputMessage;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.time.format.DateTimeParseException;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 /**
  * GlobalExceptionHandler의 예외 → HTTP 응답 매핑을 검증한다.
@@ -31,8 +34,8 @@ class GlobalExceptionHandlerTest {
         // given
         MethodArgumentNotValidException ex = mock(MethodArgumentNotValidException.class);
         BindingResult bindingResult = mock(BindingResult.class);
-        when(ex.getBindingResult()).thenReturn(bindingResult);
-        when(bindingResult.getFieldErrors()).thenReturn(List.of(
+        given(ex.getBindingResult()).willReturn(bindingResult);
+        given(bindingResult.getFieldErrors()).willReturn(List.of(
             new FieldError("syncRequest", "deviceId", "deviceId must be a valid UUID")));
 
         // when
@@ -75,5 +78,40 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().code()).isEqualTo("INVALID_ARGUMENT");
+    }
+
+    @Test
+    @DisplayName("라우팅 미스(NoResourceFoundException) → 404 NOT_FOUND, 예외 메시지 비노출")
+    void 라우팅미스_404와NOT_FOUND반환() {
+        // given
+        NoResourceFoundException ex = new NoResourceFoundException(HttpMethod.GET, "/badge/", "badge");
+
+        // when
+        ResponseEntity<ErrorResponse> response = handler.handleWebRequestException(ex);
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().code()).isEqualTo("NOT_FOUND");
+        assertThat(response.getBody().message()).isEqualTo("Not Found.");
+        // 예외 메시지("No static resource ...")는 내부 구현이라 응답에 실리지 않는다
+        assertThat(response.getBody().message()).doesNotContain("static resource");
+    }
+
+    @Test
+    @DisplayName("메서드 불일치(HttpRequestMethodNotSupportedException) → 405 METHOD_NOT_ALLOWED")
+    void 메서드불일치_405와METHOD_NOT_ALLOWED반환() {
+        // given
+        HttpRequestMethodNotSupportedException ex =
+            new HttpRequestMethodNotSupportedException("POST", List.of("GET"));
+
+        // when
+        ResponseEntity<ErrorResponse> response = handler.handleWebRequestException(ex);
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.METHOD_NOT_ALLOWED);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().code()).isEqualTo("METHOD_NOT_ALLOWED");
+        assertThat(response.getBody().message()).isEqualTo("Method Not Allowed.");
     }
 }

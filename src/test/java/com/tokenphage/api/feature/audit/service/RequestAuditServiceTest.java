@@ -14,8 +14,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.verify;
+import static org.mockito.BDDMockito.then;
+import static org.mockito.BDDMockito.willThrow;
 
 /**
  * RequestAuditService.record 의 매핑 위임과 best-effort 예외 처리를 검증한다(실 DB 미접촉).
@@ -44,7 +44,7 @@ class RequestAuditServiceTest {
 
         // then
         ArgumentCaptor<RequestAuditLog> captor = ArgumentCaptor.forClass(RequestAuditLog.class);
-        verify(auditLogRepo).save(captor.capture());
+        then(auditLogRepo).should().save(captor.capture());
         RequestAuditLog saved = captor.getValue();
         assertThat(saved.getFeature()).isEqualTo("auth");
         assertThat(saved.getAction()).isEqualTo("verify");
@@ -66,7 +66,7 @@ class RequestAuditServiceTest {
         RequestAuditCommand command = new RequestAuditCommand(
             "sync", "sync", "POST", "/api/sync",
             500, 10, "203.0.113.8", -1002L, "octocat", "tokenphage-cli/1.0", "error");
-        doThrow(new RuntimeException("db down")).when(auditLogRepo).save(any());
+        willThrow(new RuntimeException("db down")).given(auditLogRepo).save(any());
 
         // when / then — best-effort: 예외를 전파하지 않는다
         assertThatCode(() -> requestAuditService.record(command)).doesNotThrowAnyException();
@@ -87,7 +87,7 @@ class RequestAuditServiceTest {
 
         // then — 컬럼 한계(255)로 잘려 저장된다(INSERT 실패·유실 방지)
         ArgumentCaptor<RequestAuditLog> captor = ArgumentCaptor.forClass(RequestAuditLog.class);
-        verify(auditLogRepo).save(captor.capture());
+        then(auditLogRepo).should().save(captor.capture());
         RequestAuditLog saved = captor.getValue();
         assertThat(saved.getUserAgent()).hasSize(255);
         assertThat(saved.getRequestPath()).hasSize(255);
@@ -106,7 +106,7 @@ class RequestAuditServiceTest {
 
         // then
         ArgumentCaptor<RequestAuditLog> captor = ArgumentCaptor.forClass(RequestAuditLog.class);
-        verify(auditLogRepo).save(captor.capture());
+        then(auditLogRepo).should().save(captor.capture());
         RequestAuditLog saved = captor.getValue();
         assertThat(saved.getGithubId()).isNull();
         assertThat(saved.getUsername()).isNull();

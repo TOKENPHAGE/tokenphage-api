@@ -7,6 +7,8 @@ import com.tokenphage.api.feature.badge.svg.BadgeMode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -125,6 +127,35 @@ class CardClaudeBadgeThemeTest {
                 .contains("plus-pop-group");
             assertThat(count(svg, SPARKLE_KEY)).isEqualTo(10);
             assertThat(count(svg, CRUMB_KEY)).isEqualTo(8);
+        }
+    }
+
+    @Nested
+    @DisplayName("레벨 임계 경계값")
+    class LevelBoundaries {
+
+        @ParameterizedTest(name = "누적 {0} -> Lv{1}")
+        @DisplayName("레벨계산_임계직전과직후_레벨전환")
+        @CsvSource({
+            "0,          1",
+            "9999999,    1",
+            "10000000,   2",
+            "99999999,   2",
+            "100000000,  3",
+            "499999999,  3",
+            "500000000,  4",
+            "999999999,  4",
+            "1000000000, 5"
+        })
+        void 레벨계산_임계직전과직후_레벨전환(long totalTokens, int expected) {
+            // given: 임계는 LV2 10M / LV3 100M / LV4 500M / LV5 1B 이고 비교는 < 다
+
+            // when
+            int level = CardClaudeMascot.levelFor(totalTokens);
+
+            // then: < 를 <= 로 바꾸거나 상수 자릿수가 틀리면 여기서 깨진다.
+            // 구간 중간값(5천만, 2억 등)만 쓰는 기존 Levels 테스트는 이 회귀를 못 잡는다.
+            assertThat(level).isEqualTo(expected);
         }
     }
 
