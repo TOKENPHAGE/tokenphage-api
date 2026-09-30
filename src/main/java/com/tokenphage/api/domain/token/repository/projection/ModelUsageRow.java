@@ -9,6 +9,6 @@ public interface ModelUsageRow {
     /** 모델 식별자 */
     String getModel();
 
-    /** 해당 모델의 총 토큰 수 (input + output) */
+    /** 해당 모델의 사용량 (input + cache_create + output) */
     Long getTotal();
 }

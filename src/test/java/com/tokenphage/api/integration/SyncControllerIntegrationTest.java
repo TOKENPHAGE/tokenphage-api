@@ -60,7 +60,7 @@ class SyncControllerIntegrationTest extends ContainerSupport {
         new TokenRecordRequest("2026-05-03", "claude-haiku-4-5-20251001",  800,  400,  300,  80),
         new TokenRecordRequest("2026-05-03", "claude-sonnet-4-6",         3100, 1800,  900, 200)
     );
-    private static final long EXPECTED_TOTAL = 20_150L;
+    private static final long EXPECTED_TOTAL = 21_430L;
 
     @BeforeEach
     void setUp() {

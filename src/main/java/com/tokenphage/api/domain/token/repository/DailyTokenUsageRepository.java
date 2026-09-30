@@ -53,13 +53,23 @@ public interface DailyTokenUsageRepository extends JpaRepository<DailyTokenUsage
     @Query(value = "DELETE FROM daily_token_usage WHERE github_id = :githubId", nativeQuery = true)
     int deleteAllByGithubId(@Param("githubId") Long githubId);
 
-    @Query("SELECT SUM(d.inputTok + d.outputTok) FROM DailyTokenUsage d WHERE d.githubId = :githubId")
+    /**
+     * 사용자의 누적 사용량을 조회한다.
+     * <p>
+     * 사용량 = input + cache_create + output. 캐시에서 재사용한 cache_read는 제외한다 (ADR-0005).
+     *
+     * @param githubId 대상 사용자 (null 불허)
+     * @return 누적 사용량 (기록이 없으면 null)
+     * @Since 2026-09-30
+     */
+    @Query("SELECT SUM(d.inputTok + d.cacheCreateTok + d.outputTok) FROM DailyTokenUsage d WHERE d.githubId = :githubId")
     Long sumTotalTokens(@Param("githubId") Long githubId);
 
     /**
-     * 사용자의 [from, to] 기간 일별 토큰 합계(input+output)를 날짜 오름차순으로 조회한다.
+     * 사용자의 [from, to] 기간 일별 사용량을 날짜 오름차순으로 조회한다.
      * <p>
      * 창 길이는 호출자가 정한다(예: 30일 히트바, 365일 잔디). 사용 이력이 있는 날짜만 반환한다.
+     * 사용량 정의는 {@link #sumTotalTokens}와 같다.
      *
      * @param githubId 대상 사용자 (null 불허)
      * @param from     조회 시작일(포함, null 불허)
@@ -68,7 +78,7 @@ public interface DailyTokenUsageRepository extends JpaRepository<DailyTokenUsage
      * @Since 2026-07-15
      */
     @Query(value = """
-        SELECT usage_date::text AS date, SUM(input_tok + output_tok) AS total
+        SELECT usage_date::text AS date, SUM(input_tok + cache_create_tok + output_tok) AS total
         FROM daily_token_usage
         WHERE github_id = :githubId AND usage_date BETWEEN :from AND :to
         GROUP BY usage_date ORDER BY usage_date
@@ -77,8 +87,17 @@ public interface DailyTokenUsageRepository extends JpaRepository<DailyTokenUsage
                                                @Param("from") LocalDate from,
                                                @Param("to") LocalDate to);
 
+    /**
+     * 사용자의 모델별 사용량 상위 5개를 내림차순으로 조회한다.
+     * <p>
+     * 사용량 정의는 {@link #sumTotalTokens}와 같다.
+     *
+     * @param githubId 대상 사용자 (null 불허)
+     * @return 모델명·사용량 프로젝션 목록 (최대 5개)
+     * @Since 2026-09-30
+     */
     @Query(value = """
-        SELECT model, SUM(input_tok + output_tok) AS total
+        SELECT model, SUM(input_tok + cache_create_tok + output_tok) AS total
         FROM daily_token_usage WHERE github_id = :githubId
         GROUP BY model ORDER BY total DESC LIMIT 5
         """, nativeQuery = true)
