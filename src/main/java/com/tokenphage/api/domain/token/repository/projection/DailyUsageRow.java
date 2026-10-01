@@ -9,6 +9,6 @@ public interface DailyUsageRow {
     /** 사용 날짜 (yyyy-MM-dd) */
     String getDate();
 
-    /** 해당 날짜의 총 토큰 수 (input + output) */
+    /** 해당 날짜의 사용량 (input + cache_create + output) */
     Long getTotal();
 }

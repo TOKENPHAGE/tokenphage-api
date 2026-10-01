@@ -89,8 +89,8 @@ class AuthControllerIntegrationTest extends ContainerSupport {
         new TokenRecordRequest("2026-07-03", "claude-sonnet-4-6",          25_400, 11_600, 9_800, 2_100),
         new TokenRecordRequest("2026-07-04", "claude-opus-4-7",             3_100,  1_450,   700,   150)
     );
-    /** sumTotalTokens 는 input + output 만 더한다 (cacheRead/cacheCreate 는 제외). 레코드별 소계로 적어 검산이 쉽도록 둔다. */
-    private static final long EXPECTED_TOTAL = 16_800L + 14_700L + 1_250L + 37_000L + 4_550L;
+    /** sumTotalTokens 는 input + cacheCreate + output 을 더한다 (cacheRead 는 제외). 레코드별 소계로 적어 검산이 쉽도록 둔다. */
+    private static final long EXPECTED_TOTAL = 17_700L + 15_100L + 1_250L + 39_100L + 4_700L;
 
     @BeforeEach
     void setUp() throws InterruptedException {

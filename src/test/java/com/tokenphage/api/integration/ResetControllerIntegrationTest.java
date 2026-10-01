@@ -53,7 +53,7 @@ class ResetControllerIntegrationTest extends ContainerSupport {
     private static final String USERNAME  = "cli_reset_test";
     private static final String DEVICE_ID = "d3eebc99-9c0b-4ef8-bb6d-6bb9bd380a44";
 
-    // reset이 토큰 사용량을 실제로 비우는지 검증하기 위한 적재 데이터(합계 110,000).
+    // reset이 토큰 사용량을 실제로 비우는지 검증하기 위한 적재 데이터(합계 112,000).
     private static final List<TokenRecordRequest> BIG_RECORDS = List.of(
         new TokenRecordRequest("2026-06-01", "claude-opus-4-8", 80_000, 30_000, 5_000, 2_000)
     );
@@ -93,7 +93,7 @@ class ResetControllerIntegrationTest extends ContainerSupport {
     void postReset_wipesUsage() {
         // Arrange: 실 sync로 데이터 적재
         assertThat(doSync().getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(tokenRepo.sumTotalTokens(GITHUB_ID)).isEqualTo(110_000L);
+        assertThat(tokenRepo.sumTotalTokens(GITHUB_ID)).isEqualTo(112_000L);
 
         // Act
         assertThat(doReset().getStatusCode()).isEqualTo(HttpStatus.OK);
