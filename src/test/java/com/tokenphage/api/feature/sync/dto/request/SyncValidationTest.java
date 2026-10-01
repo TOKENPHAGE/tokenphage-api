@@ -284,7 +284,7 @@ class SyncValidationTest {
         @Test
         @DisplayName("토큰 4필드가 상한을 1 넘으면 각 필드 위반 - bigint SUM 오버플로 차단")
         void 레코드_토큰상한초과_각필드위반발생() {
-            // given: 상한이 없으면 Long.MAX 급 값이 저장되고, 이후 SUM(input_tok + output_tok) 이
+            // given: 상한이 없으면 Long.MAX 급 값이 저장되고, 이후 SUM(input_tok + cache_create_tok + output_tok) 이
             // Postgres 22003 을 던져 그 사용자 배지가 영구 500 이 된다 (자가 복구 불가)
             long over = TOKEN_MAX + 1;
             TokenRecordRequest r = new TokenRecordRequest("2026-06-11", "claude", over, over, over, over);
