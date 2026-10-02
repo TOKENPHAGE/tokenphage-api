@@ -30,7 +30,8 @@ public final class SvgText {
     /**
      * 토큰 수를 읽기 쉬운 단위 문자열로 변환한다.
      * <p>
-     * 1K / 1M / 1B / 1T 단위로 표시하며 소수점 첫째 자리를 유지한다. (예: 1500 → "1.5K")
+     * 1K / 1M / 1B / 1T 단위로 표시하며 소수점 첫째 자리까지 남기고 나머지는 자른다. (예: 1760 → "1.7K")
+     * 반올림하지 않으므로 표시값이 실제 값을 넘지 않아, 레벨 임계값 근처에서도 숫자와 레벨이 어긋나지 않는다.
      *
      * @param tokens 변환할 토큰 수
      * @return 단위 변환된 문자열
@@ -38,11 +39,17 @@ public final class SvgText {
      */
     public static String formatTokens(long tokens) {
         return switch (Long.valueOf(tokens)) {
-            case Long l when l >= 1_000_000_000_000L -> String.format("%.1fT", l / 1_000_000_000_000.0);
-            case Long l when l >= 1_000_000_000L -> String.format("%.1fB", l / 1_000_000_000.0);
-            case Long l when l >= 1_000_000L -> String.format("%.1fM", l / 1_000_000.0);
-            case Long l when l >= 1_000L -> String.format("%.1fK", l / 1_000.0);
+            case Long l when l >= 1_000_000_000_000L -> truncate(l, 1_000_000_000_000L, "T");
+            case Long l when l >= 1_000_000_000L -> truncate(l, 1_000_000_000L, "B");
+            case Long l when l >= 1_000_000L -> truncate(l, 1_000_000L, "M");
+            case Long l when l >= 1_000L -> truncate(l, 1_000L, "K");
             default -> String.valueOf(tokens);
         };
+    }
+
+    // 단위로 나눈 값을 소수 첫째 자리에서 자른다. 정수 연산이라 부동소수 오차가 없다.
+    private static String truncate(long tokens, long unit, String suffix) {
+        long tenths = tokens / (unit / 10);
+        return tenths / 10 + "." + tenths % 10 + suffix;
     }
 }
