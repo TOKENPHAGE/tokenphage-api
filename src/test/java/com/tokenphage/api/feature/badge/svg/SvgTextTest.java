@@ -23,6 +23,26 @@ class SvgTextTest {
         assertThat(SvgText.formatTokens(tokens)).isEqualTo(expected);
     }
 
+    @ParameterizedTest(name = "[{index}] {0} → {1}")
+    @DisplayName("소수 첫째 자리에서 자르고 반올림하지 않는다 — 표시값이 실제 값을 넘지 않는다")
+    @CsvSource({
+        "1760000000,    1.7B",      // 반올림이면 1.8B
+        "1960000000,    1.9B",      // 반올림이면 2.0B
+        "999960000,     999.9M",    // 반올림이면 1000.0M (단위 넘침)
+        "99960000,      99.9M",     // Lv.3 임계(100M) 직전 — 반올림이면 100.0M
+        "999950,        999.9K",    // 반올림이면 1000.0K
+        "999999999999,  999.9B"     // T 단위 직전 — 반올림이면 1000.0B
+    })
+    void 토큰표기_반올림경계값_소수첫째자리에서자름(long tokens, String expected) {
+        // given: 반올림하면 한 자리가 올라가는 경계값
+
+        // when
+        String actual = SvgText.formatTokens(tokens);
+
+        // then: 레벨은 원값으로 판정하므로, 표시가 올라가면 임계값 근처에서 숫자와 레벨이 어긋난다
+        assertThat(actual).isEqualTo(expected);
+    }
+
     @ParameterizedTest
     @DisplayName("XML 특수문자를 이스케이프한다")
     @CsvSource({
