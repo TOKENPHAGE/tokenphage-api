@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 
+import com.tokenphage.api.domain.runtime.repository.DailyAgentRuntimeRepository;
 import com.tokenphage.api.domain.token.repository.DailyTokenUsageRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -21,6 +22,9 @@ class ResetServiceTest {
 
     @Mock
     private DailyTokenUsageRepository tokenRepo;
+
+    @Mock
+    private DailyAgentRuntimeRepository runtimeRepo;
 
     @InjectMocks
     private ResetService resetService;
