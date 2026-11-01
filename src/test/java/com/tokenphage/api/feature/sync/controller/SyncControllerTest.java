@@ -4,23 +4,34 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tokenphage.api.config.SecurityConfig;
 import com.tokenphage.api.feature.sync.dto.request.SyncRequest;
 import com.tokenphage.api.feature.sync.dto.request.TokenRecordRequest;
+import com.tokenphage.api.feature.sync.dto.response.RuntimeSyncResultResponse;
+import com.tokenphage.api.feature.sync.dto.response.SyncResponse;
 import com.tokenphage.api.feature.sync.service.SyncOrchestrator;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.json.JsonCompareMode;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
 
 import java.util.List;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
@@ -150,6 +161,73 @@ class SyncControllerTest {
 
             // then
             then(syncOrchestrator).shouldHaveNoInteractions();
+        }
+    }
+
+    @Nested
+    @DisplayName("runtimes 칸 하위호환")
+    class RuntimesContract {
+
+        // record 를 직렬화하면 "runtimes":null 이 붙어 '칸 없음'이 재현되지 않으므로 원본 JSON 문자열로 보낸다
+        private static final String RECORD_JSON = """
+                {"date":"2026-06-11","model":"claude-opus-4","inputTok":1,"outputTok":1,"cacheReadTok":0,"cacheCreateTok":0}""";
+        private static final String RUNTIME_JSON = """
+                {"date":"2026-10-09","source":"claude","model":"claude-opus-4-1","runtimeMs":7200000}""";
+
+        private ResultActions postJson(String json) throws Exception {
+            return mockMvc.perform(post(PATH).with(jwt())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(json));
+        }
+
+        @Test
+        @DisplayName("동기화_runtimes칸없음_200과0건결과본문")
+        void 동기화_runtimes칸없음_200과0건결과본문() throws Exception {
+            // given
+            String json = """
+                    {"deviceId":"%s","records":[%s]}""".formatted(VALID_UUID, RECORD_JSON);
+            given(syncOrchestrator.sync(any(Jwt.class), any(SyncRequest.class)))
+                    .willReturn(new SyncResponse(new RuntimeSyncResultResponse(0, 0)));
+
+            // when / then: 칸이 없어도 결과 본문을 준다(옛 CLI 는 본문을 무시함)
+            postJson(json)
+                    .andExpect(status().isOk())
+                    .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                    .andExpect(content().json("{\"runtimes\":{\"accepted\":0,\"rejected\":0}}", JsonCompareMode.STRICT));
+        }
+
+        @Test
+        @DisplayName("동기화_runtimes칸있음_200결과본문")
+        void 동기화_runtimes칸있음_200결과본문() throws Exception {
+            // given
+            String json = """
+                    {"deviceId":"%s","records":[%s],"runtimes":[%s,%s,%s]}"""
+                    .formatted(VALID_UUID, RECORD_JSON, RUNTIME_JSON, RUNTIME_JSON, RUNTIME_JSON);
+            given(syncOrchestrator.sync(any(Jwt.class), any(SyncRequest.class)))
+                    .willReturn(new SyncResponse(new RuntimeSyncResultResponse(2, 1)));
+
+            // when / then
+            postJson(json)
+                    .andExpect(status().isOk())
+                    .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                    .andExpect(content().json("{\"runtimes\":{\"accepted\":2,\"rejected\":1}}", JsonCompareMode.STRICT));
+        }
+
+        @ParameterizedTest(name = "{0}")
+        @DisplayName("동기화_records와runtimes둘다빔_400과기존본문")
+        @ValueSource(strings = {
+                "{\"deviceId\":\"550e8400-e29b-41d4-a716-446655440000\",\"records\":[]}",
+                "{\"deviceId\":\"550e8400-e29b-41d4-a716-446655440000\",\"records\":[],\"runtimes\":[]}",
+                "{\"deviceId\":\"550e8400-e29b-41d4-a716-446655440000\"}"
+        })
+        void 동기화_records와runtimes둘다빔_400과기존본문(String json) throws Exception {
+            // given: 2026.8.1까지 빈 records 를 보냈을 때 받던 400 본문이 바뀌면 안 된다
+
+            // when / then
+            postJson(json)
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("INVALID_INPUT"))
+                    .andExpect(jsonPath("$.message").value("records: records must not be empty"));
         }
     }
 }
