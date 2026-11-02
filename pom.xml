@@ -242,6 +242,27 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <!-- 커버리지: 유닛·통합 결과를 target/jacoco.exec 하나에 모은다 -->
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.15</version>
+                <executions>
+                    <execution>
+                        <id>prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <!-- verify 때 합산 리포트: target/site/jacoco/index.html -->
+                        <id>report</id>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 

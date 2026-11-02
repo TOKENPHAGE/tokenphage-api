@@ -163,6 +163,85 @@ class SyncValidationTest {
     }
 
     @Nested
+    @DisplayName("SyncRequest - runtimes 칸")
+    class SyncReqRuntimes {
+
+        private RuntimeRecordRequest validRuntime() {
+            return new RuntimeRecordRequest("2026-10-09", "claude", "claude-opus-4-1", 7_200_000L);
+        }
+
+        /** 유효한 실행시간 n건. 개수 제약만 검증하도록 각 항목 자체는 위반이 없게 만든다. */
+        private List<RuntimeRecordRequest> runtimes(int n) {
+            return java.util.stream.IntStream.range(0, n).mapToObj(i -> validRuntime()).toList();
+        }
+
+        @Test
+        @DisplayName("records와 runtimes가 함께 있음(2026.10.1) → 위반 없음")
+        void 동기화요청_records와runtimes함께_위반없음() {
+            // given
+            SyncRequest req = new SyncRequest(VALID_UUID, List.of(validRecord()), List.of(validRuntime()));
+
+            // when
+            var violations = validator.validate(req);
+
+            // then
+            assertThat(violations).isEmpty();
+        }
+
+        @Test
+        @DisplayName("records 없이 runtimes만 있어도 위반 없음")
+        void 동기화요청_runtimes만있음_위반없음() {
+            // given
+            SyncRequest req = new SyncRequest(VALID_UUID, List.of(), List.of(validRuntime()));
+
+            // when
+            var violations = validator.validate(req);
+
+            // then
+            assertThat(violations).isEmpty();
+        }
+
+        @Test
+        @DisplayName("records와 runtimes가 둘 다 비면 records 위반 - 옛 요청과 같은 경로")
+        void 동기화요청_records와runtimes둘다빔_records위반발생() {
+            // given
+            SyncRequest req = new SyncRequest(VALID_UUID, List.of(), List.of());
+
+            // when
+            var violations = validator.validate(req);
+
+            // then
+            assertThat(hasViolationOn(violations, "records")).isTrue();
+        }
+
+        @Test
+        @DisplayName("runtimes가 상한(10,000건)이면 위반 없음 - 경계")
+        void 동기화요청_runtimes상한_위반없음() {
+            // given
+            SyncRequest req = new SyncRequest(VALID_UUID, List.of(validRecord()), runtimes(MAX_RECORDS));
+
+            // when
+            var violations = validator.validate(req);
+
+            // then
+            assertThat(hasViolationOn(violations, "runtimes")).isFalse();
+        }
+
+        @Test
+        @DisplayName("runtimes가 상한을 1건 넘으면 runtimes 위반")
+        void 동기화요청_runtimes상한초과_위반발생() {
+            // given
+            SyncRequest req = new SyncRequest(VALID_UUID, List.of(validRecord()), runtimes(MAX_RECORDS + 1));
+
+            // when
+            var violations = validator.validate(req);
+
+            // then
+            assertThat(hasViolationOn(violations, "runtimes")).isTrue();
+        }
+    }
+
+    @Nested
     @DisplayName("TokenRecordRequest")
     class RecordReq {
 
