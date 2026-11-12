@@ -1,6 +1,8 @@
 package com.tokenphage.api.feature.badge.service;
 
 import com.tokenphage.api.domain.badge.repository.BadgeSnapshotRepository;
+import com.tokenphage.api.domain.badge.repository.entity.BadgeSnapshot;
+import com.tokenphage.api.domain.badge.repository.entity.BadgeSnapshotId;
 import com.tokenphage.api.domain.token.repository.DailyTokenUsageRepository;
 import com.tokenphage.api.domain.token.repository.projection.CacheTokenSum;
 import com.tokenphage.api.domain.token.repository.projection.DailyUsageRow;
@@ -592,9 +594,12 @@ class BadgeQueryServiceTest {
         @DisplayName("스냅샷_요구시_PK조회1회payload반환")
         void 스냅샷_요구시_PK조회1회payload반환() {
             // given
+            // BadgeSnapshot은 setter가 없어(적재는 마이그레이션이 한다) mock으로 만든다
             String payload = "{\"signupRank\":1}";
+            BadgeSnapshot stored = mock(BadgeSnapshot.class);
+            given(stored.getPayload()).willReturn(payload);
             given(userRepo.findByUsername(USERNAME)).willReturn(Optional.of(user()));
-            given(snapshotRepo.findPayload(GITHUB_ID, "beta-tester")).willReturn(payload);
+            given(snapshotRepo.findById(new BadgeSnapshotId(GITHUB_ID, "beta-tester"))).willReturn(Optional.of(stored));
 
             // when
             BadgeResponse res = service.query(USERNAME, "beta-tester",
@@ -603,7 +608,7 @@ class BadgeQueryServiceTest {
             // then
             // 스냅샷만 요구하면 토큰 집계 쿼리는 전혀 실행되지 않는다
             assertThat(res.snapshot()).isEqualTo(payload);
-            then(snapshotRepo).should().findPayload(GITHUB_ID, "beta-tester");
+            then(snapshotRepo).should().findById(new BadgeSnapshotId(GITHUB_ID, "beta-tester"));
             then(tokenRepo).shouldHaveNoInteractions();
         }
 
@@ -628,7 +633,7 @@ class BadgeQueryServiceTest {
             // given
             // 자격은 있는데 스냅샷 적재가 누락된 사용자 (경계)
             given(userRepo.findByUsername(USERNAME)).willReturn(Optional.of(user()));
-            given(snapshotRepo.findPayload(GITHUB_ID, "beta-tester")).willReturn(null);
+            given(snapshotRepo.findById(new BadgeSnapshotId(GITHUB_ID, "beta-tester"))).willReturn(Optional.empty());
 
             // when
             BadgeResponse res = service.query(USERNAME, "beta-tester",

@@ -14,14 +14,14 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * findGrant 의 native 쿼리를 실제 PostgreSQL 에 태워 검증한다.
+ * findGrant 의 JPQL 쿼리를 실제 PostgreSQL 에 태워 검증한다.
  * <p>
  * 컴파일러가 못 잡는 계약이 대상이다 — 컬럼명, 조인 조건, SQL 별칭 ↔ BadgeGrantRow getter 매핑.
  * 컨테이너 DB 를 공유하고 롤백이 없어 AfterEach 에서 FK 역순으로 정리한다.
  */
 @Tag("integration")
 @SpringBootTest
-@DisplayName("UserBadgeGrantRepository native 쿼리")
+@DisplayName("UserBadgeGrantRepository findGrant 쿼리")
 class UserBadgeGrantRepositoryIntegrationTest extends ContainerSupport {
 
     /** V5 가 시드하는 공개 배지 코드 (require_grant = false). */

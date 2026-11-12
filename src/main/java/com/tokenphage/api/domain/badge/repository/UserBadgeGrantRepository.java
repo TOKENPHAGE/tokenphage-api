@@ -20,25 +20,25 @@ public interface UserBadgeGrantRepository
      * @param username  배지 주인 GitHub 사용자명 (null 불허)
      * @param badgeCode 정리된 배지 코드 (null 불허)
      * @return 사용 가능 여부·사용자 존재 여부·안내 문구. 등록되지 않은 배지 코드면 null
-     * @Since 2026-08-10
+     * @Since 2026-11-11
      */
-    @Query(value = """
-            SELECT (NOT c.require_grant) OR EXISTS (
+    @Query("""
+            SELECT CASE WHEN c.requireGrant = FALSE OR EXISTS (
                        SELECT 1
-                       FROM user_badge_grant ubg
-                       JOIN users u ON u.github_id = ubg.github_id
-                       WHERE u.username     = :username
-                         AND ubg.badge_code = c.code
-                   )                AS granted,
-                   EXISTS (
+                       FROM UserBadgeGrant ubg
+                       JOIN User u ON u.githubId = ubg.githubId
+                       WHERE u.username    = :username
+                         AND ubg.badgeCode = c.code
+                   ) THEN TRUE ELSE FALSE END AS granted,
+                   CASE WHEN EXISTS (
                        SELECT 1
-                       FROM users u2
+                       FROM User u2
                        WHERE u2.username = :username
-                   )                AS userExists,
-                   c.display_name   AS displayName,
-                   c.locked_message AS lockedMessage
-            FROM badge_catalog c
+                   ) THEN TRUE ELSE FALSE END AS userExists,
+                   c.displayName   AS displayName,
+                   c.lockedMessage AS lockedMessage
+            FROM BadgeCatalog c
             WHERE c.code = :badgeCode
-            """, nativeQuery = true)
+            """)
     BadgeGrantRow findGrant(@Param("username") String username, @Param("badgeCode") String badgeCode);
 }
