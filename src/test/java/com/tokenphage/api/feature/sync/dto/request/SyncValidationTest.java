@@ -334,7 +334,7 @@ class SyncValidationTest {
         @Test
         @DisplayName("model이 컬럼 폭을 1자 넘으면 model 위반 - DB 500 대신 400으로 막는다")
         void 레코드_model컬럼폭초과_위반발생() {
-            // given: 제약이 없으면 네이티브 INSERT 까지 내려가 Postgres 22001 이 나고,
+            // given: 제약이 없으면 INSERT 까지 내려가 Postgres 22001 이 나고,
             // saveRecords 가 @Transactional 이라 그 sync 배치 전체가 롤백된다
             TokenRecordRequest r = new TokenRecordRequest(
                     "2026-06-11", "m".repeat(MODEL_MAX_LENGTH + 1), 1, 1, 0, 0);

@@ -1,6 +1,7 @@
 package com.tokenphage.api.integration;
 
 import com.tokenphage.api.domain.token.repository.DailyTokenUsageRepository;
+import com.tokenphage.api.domain.token.repository.projection.CacheTokenSum;
 import com.tokenphage.api.domain.token.repository.projection.DailyUsageRow;
 import com.tokenphage.api.domain.token.repository.projection.ModelUsageRow;
 import org.junit.jupiter.api.AfterEach;
@@ -14,6 +15,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -23,7 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 /**
- * 사용량 집계 쿼리(누적·일별·모델별)를 실제 PostgreSQL 에 태워 검증한다.
+ * 사용량 저장(upsert)과 집계 쿼리(누적·일별·모델별·캐시)를 실제 PostgreSQL 에 태워 검증한다.
  * <p>
  * 사용량 = input + cache_create + output (cache_read 제외). 새 입력이 input·cache_create 에 어떻게 나뉘든
  * (Claude는 cache_create 중심, Codex는 input 중심) 같은 작업은 같은 값이어야 한다.
@@ -31,7 +33,7 @@ import static org.assertj.core.api.Assertions.tuple;
  */
 @Tag("integration")
 @SpringBootTest
-@DisplayName("DailyTokenUsageRepository 사용량 집계 쿼리")
+@DisplayName("DailyTokenUsageRepository 사용량 저장·집계 쿼리")
 class DailyTokenUsageRepositoryIntegrationTest extends ContainerSupport {
 
     // 싱글턴 컨테이너 DB를 통합테스트 클래스들이 공유하므로 다른 클래스와 겹치지 않는 값을 쓴다 (99901~99907 사용 중).
@@ -65,6 +67,109 @@ class DailyTokenUsageRepositoryIntegrationTest extends ContainerSupport {
                 (github_id, device_id, usage_date, model, input_tok, output_tok, cache_read_tok, cache_create_tok)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """, GITHUB_ID, DEVICE_ID, date, model, input, output, cacheRead, cacheCreate);
+    }
+
+    private List<UsageRow> rowsOf() {
+        return jdbc.query("""
+                SELECT device_id, usage_date, model, input_tok, output_tok, cache_read_tok, cache_create_tok
+                FROM daily_token_usage WHERE github_id = ?
+                """,
+                (rs, i) -> new UsageRow(rs.getObject("device_id", UUID.class), rs.getObject("usage_date", LocalDate.class),
+                        rs.getString("model"), rs.getLong("input_tok"), rs.getLong("output_tok"),
+                        rs.getLong("cache_read_tok"), rs.getLong("cache_create_tok")),
+                GITHUB_ID);
+    }
+
+    record UsageRow(UUID deviceId, LocalDate usageDate, String model,
+                    long inputTok, long outputTok, long cacheReadTok, long cacheCreateTok) {
+    }
+
+    @Nested
+    @Transactional
+    @DisplayName("upsertRecord() - 덮어쓰기 저장")
+    class UpsertRecord {
+
+        private static final String MODEL = "claude-opus-5";
+
+        @Test
+        @DisplayName("새 키면 토큰 4종이 각자의 컬럼에 저장된다")
+        void 저장_새키_토큰4종컬럼별저장() {
+            // given: 컬럼마다 자릿수가 달라 서로 바뀌면 드러난다
+
+            // when
+            repository.upsertRecord(GITHUB_ID, DEVICE_ID, DAY1, MODEL, 1, 10, 100, 1_000);
+
+            // then
+            assertThat(rowsOf()).containsExactly(new UsageRow(DEVICE_ID, DAY1, MODEL, 1, 10, 100, 1_000));
+        }
+
+        @Test
+        @DisplayName("같은 키로 다시 저장하면 한 줄이고 토큰 4종이 모두 새 값이다 (값이 줄어도 덮어쓴다)")
+        void 저장_같은키두번_토큰4종새값으로교체() {
+            // given
+            repository.upsertRecord(GITHUB_ID, DEVICE_ID, DAY1, MODEL, 1, 10, 100, 1_000);
+
+            // when: 늘어나는 컬럼과 줄어드는 컬럼을 섞는다
+            repository.upsertRecord(GITHUB_ID, DEVICE_ID, DAY1, MODEL, 2, 5, 300, 400);
+
+            // then
+            assertThat(rowsOf()).containsExactly(new UsageRow(DEVICE_ID, DAY1, MODEL, 2, 5, 300, 400));
+        }
+
+        @ParameterizedTest(name = "{0}만 다름")
+        @CsvSource({
+                "device, a7eebc99-9c0b-4ef8-bb6d-6bb9bd380a88, 2026-09-01, claude-opus-5",
+                "date,   e4eebc99-9c0b-4ef8-bb6d-6bb9bd380a55, 2026-09-02, claude-opus-5",
+                "model,  e4eebc99-9c0b-4ef8-bb6d-6bb9bd380a55, 2026-09-01, gpt-5.5"
+        })
+        @DisplayName("기기·날짜·모델 중 하나라도 다르면 별도 행이다")
+        void 저장_키한칸다름_별도행(String differs, UUID deviceId, LocalDate date, String model) {
+            // given
+            repository.upsertRecord(GITHUB_ID, DEVICE_ID, DAY1, MODEL, 1, 10, 100, 1_000);
+
+            // when
+            repository.upsertRecord(GITHUB_ID, deviceId, date, model, 2, 20, 200, 2_000);
+
+            // then
+            assertThat(rowsOf()).containsExactlyInAnyOrder(
+                    new UsageRow(DEVICE_ID, DAY1, MODEL, 1, 10, 100, 1_000),
+                    new UsageRow(deviceId, date, model, 2, 20, 200, 2_000));
+        }
+    }
+
+    @Nested
+    @DisplayName("sumCacheTokens() - 캐시 토큰 합계")
+    class SumCacheTokens {
+
+        @Test
+        @DisplayName("cache_read·cache_create·input을 컬럼별로 따로 합산한다")
+        void 캐시합계_여러행_컬럼별합산() {
+            // given: 컬럼마다 자릿수가 달라 합이 어느 컬럼에서 왔는지 드러난다
+            insertUsage(DAY1, "claude-opus-5", 1, 10, 100, 1_000);
+            insertUsage(DAY2, "gpt-5.5",       2, 20, 200, 2_000);
+
+            // when
+            List<CacheTokenSum> rows = repository.sumCacheTokens(GITHUB_ID);
+
+            // then: output 30은 어느 합에도 섞이지 않는다
+            assertThat(rows)
+                    .extracting(CacheTokenSum::getCacheRead, CacheTokenSum::getCacheCreate, CacheTokenSum::getInputTok)
+                    .containsExactly(tuple(300L, 3_000L, 3L));
+        }
+
+        @Test
+        @DisplayName("기록이 없으면 한 행이고 합계는 모두 null이다")
+        void 캐시합계_기록없음_한행에null() {
+            // given: 사용자만 있고 사용량 행은 없다
+
+            // when
+            List<CacheTokenSum> rows = repository.sumCacheTokens(GITHUB_ID);
+
+            // then: BadgeQueryService가 getCacheRead() == null 을 "데이터 없음"으로 읽는다
+            assertThat(rows)
+                    .extracting(CacheTokenSum::getCacheRead, CacheTokenSum::getCacheCreate, CacheTokenSum::getInputTok)
+                    .containsExactly(tuple(null, null, null));
+        }
     }
 
     @Nested
