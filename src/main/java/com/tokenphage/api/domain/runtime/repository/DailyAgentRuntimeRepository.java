@@ -23,15 +23,15 @@ public interface DailyAgentRuntimeRepository extends JpaRepository<DailyAgentRun
      * @param source    로그를 읽은 도구 (claude, codex, opencode)
      * @param model     모델 이름 (최대 80자)
      * @param runtimeMs 그 날짜·도구·모델의 실행시간 합(ms, 0 이상)
-     * @Since 2026-10-11
+     * @Since 2026-11-11
      */
     @Modifying
-    @Query(value = """
-        INSERT INTO daily_agent_runtime (github_id, device_id, usage_date, source, model, runtime_ms)
+    @Query("""
+        INSERT INTO DailyAgentRuntime (githubId, deviceId, usageDate, source, model, runtimeMs)
         VALUES (:githubId, :deviceId, :usageDate, :source, :model, :runtimeMs)
-        ON CONFLICT (github_id, device_id, usage_date, source, model)
-        DO UPDATE SET runtime_ms = EXCLUDED.runtime_ms
-        """, nativeQuery = true)
+        ON CONFLICT (githubId, deviceId, usageDate, source, model)
+        DO UPDATE SET runtimeMs = excluded.runtimeMs
+        """)
     void upsertRecord(
         @Param("githubId")  Long githubId,
         @Param("deviceId")  UUID deviceId,
@@ -49,9 +49,9 @@ public interface DailyAgentRuntimeRepository extends JpaRepository<DailyAgentRun
      *
      * @param githubId 대상 사용자 (JWT sub에서 파생, null 불허)
      * @return 삭제된 행 수
-     * @Since 2026-10-11
+     * @Since 2026-11-11
      */
     @Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query(value = "DELETE FROM daily_agent_runtime WHERE github_id = :githubId", nativeQuery = true)
+    @Query("DELETE FROM DailyAgentRuntime d WHERE d.githubId = :githubId")
     int deleteAllByGithubId(@Param("githubId") Long githubId);
 }

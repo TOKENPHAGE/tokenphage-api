@@ -1,6 +1,8 @@
 package com.tokenphage.api.feature.badge.service;
 
 import com.tokenphage.api.domain.badge.repository.BadgeSnapshotRepository;
+import com.tokenphage.api.domain.badge.repository.entity.BadgeSnapshot;
+import com.tokenphage.api.domain.badge.repository.entity.BadgeSnapshotId;
 import com.tokenphage.api.domain.token.repository.DailyTokenUsageRepository;
 import com.tokenphage.api.domain.token.repository.projection.CacheTokenSum;
 import com.tokenphage.api.domain.user.repository.UserRepository;
@@ -118,7 +120,9 @@ class BadgeQueryService {
         // #11. 고정 스냅샷: 요구 시 복합 PK로 1회 조회. 행이 없으면 빈 문자열 (적재 누락 신호)
         String snapshot = "";
         if (needs.contains(BadgeDataNeed.BADGE_SNAPSHOT)) {
-            String payload = snapshotRepo.findPayload(githubId, badgeCode);
+            String payload = snapshotRepo.findById(new BadgeSnapshotId(githubId, badgeCode))
+                    .map(BadgeSnapshot::getPayload)
+                    .orElse(null);
             if (payload == null) {
                 log.warn("Badge snapshot missing: username={}, badgeCode={}", username, badgeCode);
             } else {
