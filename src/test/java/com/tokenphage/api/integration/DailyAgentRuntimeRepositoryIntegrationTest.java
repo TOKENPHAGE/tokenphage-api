@@ -20,14 +20,14 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 실행시간 저장소의 네이티브 SQL(덮어쓰기, 행 분리, 삭제)을 실제 PostgreSQL 에 태워 검증한다.
+ * 실행시간 저장소의 쿼리(덮어쓰기, 행 분리, 삭제)를 실제 PostgreSQL 에 태워 검증한다.
  * <p>
  * 테스트마다 트랜잭션을 롤백해 공유 컨테이너 DB 에 행을 남기지 않는다.
  */
 @Tag("integration")
 @SpringBootTest
 @Transactional
-@DisplayName("DailyAgentRuntimeRepository 네이티브 SQL")
+@DisplayName("DailyAgentRuntimeRepository 저장·삭제 쿼리")
 class DailyAgentRuntimeRepositoryIntegrationTest extends ContainerSupport {
 
     // 싱글턴 컨테이너 DB를 통합테스트 클래스들이 공유하므로 다른 클래스와 겹치지 않는 값을 쓴다 (99901~99909 사용 중).
