@@ -279,7 +279,7 @@ class GrassClaudeBadgeThemeTest {
             daily1y.add(new DailyCountResponse(date.toString(), usage.getOrDefault(date, 0L)));
         }
         return new BadgeResponse(username, 0L, List.of(), List.of(), 0.0,
-                yearTokens, streakDays, daily1y, "");
+                yearTokens, streakDays, daily1y, "", 0L);
     }
 
     private static int countOccurrences(String text, String token) {

@@ -3,6 +3,7 @@ package com.tokenphage.api.feature.badge.service;
 import com.tokenphage.api.domain.badge.repository.BadgeSnapshotRepository;
 import com.tokenphage.api.domain.badge.repository.entity.BadgeSnapshot;
 import com.tokenphage.api.domain.badge.repository.entity.BadgeSnapshotId;
+import com.tokenphage.api.domain.runtime.repository.DailyAgentRuntimeRepository;
 import com.tokenphage.api.domain.token.repository.DailyTokenUsageRepository;
 import com.tokenphage.api.domain.token.repository.projection.CacheTokenSum;
 import com.tokenphage.api.domain.user.repository.UserRepository;
@@ -34,6 +35,7 @@ class BadgeQueryService {
     private final UserRepository userRepo;
     private final DailyTokenUsageRepository tokenRepo;
     private final BadgeSnapshotRepository snapshotRepo;
+    private final DailyAgentRuntimeRepository runtimeRepo;
 
     @Value("${badge.timezone}")
     private String timezone;
@@ -44,6 +46,7 @@ class BadgeQueryService {
      * 요구되지 않은 데이터는 조회 쿼리를 실행하지 않고 빈값(0 / 빈 리스트 / 0.0)으로 채운다.
      * 일별 쿼리는 연간 계열(DAILY_1Y/STREAK_DAYS/YEAR_TOKENS) 또는 DAILY_30D 요구 시에만
      * 최대 범위(연간 요구 시 365일, 아니면 30일)로 1회 조회한 뒤 히트바·연간일별·연간총량·streak을 파생한다.
+     * 누적 가동시간은 TOTAL_RUNTIME_MS 요구 시에만 합계 쿼리 1회로 조회한다.
      *
      * @param username  배지를 조회할 GitHub 사용자명 (null 불허)
      * @param badgeCode 정규화된 배지 코드 (null 불허) — 스냅샷 복합키의 절반
@@ -130,7 +133,14 @@ class BadgeQueryService {
             }
         }
 
-        // #12. 조회된 데이터를 BadgeResponse로 조립하여 반환
+        // #12. 누적 가동시간: 요구 시에만 조회, 기록이 없으면(null) 0
+        long totalRuntimeMs = 0L;
+        if (needs.contains(BadgeDataNeed.TOTAL_RUNTIME_MS)) {
+            Long runtimeSum = runtimeRepo.sumRuntimeMs(githubId);
+            totalRuntimeMs = runtimeSum == null ? 0L : runtimeSum;
+        }
+
+        // #13. 조회된 데이터를 BadgeResponse로 조립하여 반환
         log.debug("Badge data ready: username={}, totalTokens={}, heatbarDays={}, yearDays={}, streakDays={}",
                 username, totalTokens, heat30bar.size(), daily1y.size(), streakDays);
         return new BadgeResponse(
@@ -142,7 +152,8 @@ class BadgeQueryService {
                 yearTokens,
                 streakDays,
                 daily1y,
-                snapshot
+                snapshot,
+                totalRuntimeMs
         );
     }
 

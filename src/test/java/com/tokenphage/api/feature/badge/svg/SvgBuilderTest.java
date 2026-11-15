@@ -49,7 +49,7 @@ class SvgBuilderTest {
             new ModelCountResponse("claude-sonnet-4-6", 1_200_000),
             new ModelCountResponse("claude-opus-4-7",     450_000)
         );
-        return new BadgeResponse("leeyoungseok", 15_430_000L, daily30d, topModels, 0.87, 0L, 0, List.of(), "");
+        return new BadgeResponse("leeyoungseok", 15_430_000L, daily30d, topModels, 0.87, 0L, 0, List.of(), "", 0L);
     }
 
     private static int count(String text, String token) {

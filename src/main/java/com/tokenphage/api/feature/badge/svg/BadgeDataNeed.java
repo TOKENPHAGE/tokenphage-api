@@ -34,7 +34,10 @@ public enum BadgeDataNeed {
     YEAR_TOKENS(365),
 
     /** 값이 고정된 배지의 미리 계산된 스냅샷 JSON → BadgeResponse.snapshot */
-    BADGE_SNAPSHOT(0);
+    BADGE_SNAPSHOT(0),
+
+    /** 전 기간 누적 에이전트 가동시간(ms). 전 기기·도구·모델 합계 → BadgeResponse.totalRuntimeMs */
+    TOTAL_RUNTIME_MS(0);
 
     /** 이 데이터를 채우는 데 필요한 일별 조회 창(일). 0이면 일별 조회가 필요 없다. */
     private final int dailyWindowDays;

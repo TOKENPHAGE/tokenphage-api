@@ -3,6 +3,7 @@ package com.tokenphage.api.feature.badge.service;
 import com.tokenphage.api.domain.badge.repository.BadgeSnapshotRepository;
 import com.tokenphage.api.domain.badge.repository.entity.BadgeSnapshot;
 import com.tokenphage.api.domain.badge.repository.entity.BadgeSnapshotId;
+import com.tokenphage.api.domain.runtime.repository.DailyAgentRuntimeRepository;
 import com.tokenphage.api.domain.token.repository.DailyTokenUsageRepository;
 import com.tokenphage.api.domain.token.repository.projection.CacheTokenSum;
 import com.tokenphage.api.domain.token.repository.projection.DailyUsageRow;
@@ -43,7 +44,7 @@ import static org.mockito.Mockito.never;
 /**
  * BadgeQueryService.query / calcCacheHitRate 검증: 사용자 미존재 예외, 정상 응답 조립,
  * 30일 히트바 0값 채움(전체/일부/없음), 누적 null 처리, 캐시 히트율 경계 계산에 더해
- * needs 기반 조회 게이팅(요구된 쿼리만 실행)과 streak 2일 유예 계산을 확인한다.
+ * needs 기반 조회 게이팅(요구된 쿼리만 실행)과 streak 2일 유예 계산, 누적 가동시간 조회를 확인한다.
  */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("BadgeQueryService 단위 테스트")
@@ -67,6 +68,9 @@ class BadgeQueryServiceTest {
 
     @Mock
     private BadgeSnapshotRepository snapshotRepo;
+
+    @Mock
+    private DailyAgentRuntimeRepository runtimeRepo;
 
     @InjectMocks
     private BadgeQueryService service;
@@ -641,6 +645,59 @@ class BadgeQueryServiceTest {
 
             // then
             assertThat(res.snapshot()).isEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("query - 누적 가동시간(totalRuntimeMs)")
+    class Query_TotalRuntimeMs {
+
+        private static final Set<BadgeDataNeed> ODOMETER_NEEDS = EnumSet.of(BadgeDataNeed.TOTAL_RUNTIME_MS);
+
+        @Test
+        @DisplayName("가동시간_요구시_합계그대로반환")
+        void 가동시간_요구시_합계그대로반환() {
+            // given
+            given(userRepo.findByUsername(USERNAME)).willReturn(Optional.of(user()));
+            given(runtimeRepo.sumRuntimeMs(GITHUB_ID)).willReturn(4_624_560_000L);
+
+            // when
+            BadgeResponse res = service.query(USERNAME, "odometer-claude", ODOMETER_NEEDS);
+
+            // then
+            // 가동시간만 요구하면 토큰 집계 쿼리는 전혀 실행되지 않는다
+            assertThat(res.totalRuntimeMs()).isEqualTo(4_624_560_000L);
+            then(tokenRepo).shouldHaveNoInteractions();
+        }
+
+        @Test
+        @DisplayName("가동시간_기록없어합계null_0반환")
+        void 가동시간_기록없어합계null_0반환() {
+            // given
+            // 가동시간을 한 번도 보내지 않은 사용자 (경계)
+            given(userRepo.findByUsername(USERNAME)).willReturn(Optional.of(user()));
+            given(runtimeRepo.sumRuntimeMs(GITHUB_ID)).willReturn(null);
+
+            // when
+            BadgeResponse res = service.query(USERNAME, "odometer-claude", ODOMETER_NEEDS);
+
+            // then
+            assertThat(res.totalRuntimeMs()).isZero();
+        }
+
+        @Test
+        @DisplayName("가동시간_미요구_조회안함")
+        void 가동시간_미요구_조회안함() {
+            // given
+            // TOTAL_RUNTIME_MS를 요구하지 않는 테마의 경로 (경계)
+            given(userRepo.findByUsername(USERNAME)).willReturn(Optional.of(user()));
+
+            // when
+            BadgeResponse res = service.query(USERNAME, BADGE_CODE, EnumSet.noneOf(BadgeDataNeed.class));
+
+            // then
+            assertThat(res.totalRuntimeMs()).isZero();
+            then(runtimeRepo).shouldHaveNoInteractions();
         }
     }
 }
