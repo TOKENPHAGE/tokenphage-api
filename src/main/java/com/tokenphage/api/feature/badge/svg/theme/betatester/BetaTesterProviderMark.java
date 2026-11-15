@@ -1,10 +1,13 @@
 package com.tokenphage.api.feature.badge.svg.theme.betatester;
 
+import com.tokenphage.api.feature.badge.svg.SvgLogo;
+
 /**
  * 사용 모델 로고(Claude·OpenAI) 배치 유틸.
  * <p>
  * 판정은 스냅샷 적재 시점에 끝나 있다 — 여기서는 boolean 두 개로 배치만 결정한다.
- * path 2개는 badge-basic.svg.txt 프로토타입에서 스크립트로 추출했다. 손으로 수정하지 않는다.
+ * Claude 로고 path는 프로토타입(badge-basic.svg.txt) 추출값이다. 손으로 수정하지 않는다.
+ * OpenAI 로고 path는 {@link SvgLogo#OPENAI_PATH}를 쓴다.
  */
 final class BetaTesterProviderMark {
 
@@ -44,24 +47,6 @@ final class BetaTesterProviderMark {
             -.14.018-1.434 1.967-2.18 2.945-1.726 1.845-.414.164-.717-.37.067-.662.401-.589 2.388-3.036 1.44-1.8\
             82.93-1.086-.006-.158h-.055L4.132 18.56l-1.13.146-.487-.456.061-.746.231-.243 1.908-1.312z""";
 
-    /** OpenAI 로고 path d (프로토타입 추출). */
-    private static final String OPENAI_MARK = """
-            M22.2819 9.8211a5.9847 5.9847 0 0 0-.5157-4.9108 6.0462 6.0462 0 0 0-6.5098-2.9A6.0651 6.0651 0 0 0 \
-            4.9807 4.1818a5.9847 5.9847 0 0 0-3.9977 2.9 6.0462 6.0462 0 0 0 .7427 7.0966 5.98 5.98 0 0 0 .511 4\
-            .9107 6.051 6.051 0 0 0 6.5146 2.9001A5.9847 5.9847 0 0 0 13.2599 24a6.0557 6.0557 0 0 0 5.7718-4.20\
-            58 5.9894 5.9894 0 0 0 3.9977-2.9001 6.0557 6.0557 0 0 0-.7475-7.0729zm-9.022 12.6081a4.4755 4.4755 \
-            0 0 1-2.8764-1.0408l.1419-.0804 4.7783-2.7582a.7948.7948 0 0 0 .3927-.6813v-6.7369l2.02 1.1686a.071.\
-            071 0 0 1 .038.052v5.5826a4.504 4.504 0 0 1-4.4945 4.4944zm-9.6607-4.1254a4.4708 4.4708 0 0 1-.5346-\
-            3.0137l.142.0852 4.783 2.7582a.7712.7712 0 0 0 .7806 0l5.8428-3.3685v2.3324a.0804.0804 0 0 1-.0332.0\
-            615L9.74 19.9502a4.4992 4.4992 0 0 1-6.1408-1.6464zM2.3408 7.8956a4.485 4.485 0 0 1 2.3655-1.9728V11\
-            .6a.7664.7664 0 0 0 .3879.6765l5.8144 3.3543-2.0201 1.1685a.0757.0757 0 0 1-.071 0l-4.8303-2.7865A4.\
-            504 4.504 0 0 1 2.3408 7.8956zm16.5963 3.8558L13.1038 8.364 15.1192 7.2a.0757.0757 0 0 1 .071 0l4.83\
-            03 2.7913a4.4944 4.4944 0 0 1-.6765 8.1042v-5.6772a.79.79 0 0 0-.407-.667zm2.0107-3.0231l-.142-.0852\
-            -4.7735-2.7818a.7759.7759 0 0 0-.7854 0L9.409 9.2297V6.8974a.0662.0662 0 0 1 .0284-.0615l4.8303-2.78\
-            66a4.4992 4.4992 0 0 1 6.6802 4.66zM8.3065 12.863l-2.02-1.1638a.0804.0804 0 0 1-.038-.0567V6.0742a4.\
-            4992 4.4992 0 0 1 7.3757-3.4537l-.142.0805L8.704 5.459a.7948.7948 0 0 0-.3927.6813zm1.0976-2.3654l2.\
-            602-1.4998 2.6069 1.4998v2.9994l-2.5974 1.4997-2.6067-1.4997Z""";
-
     private BetaTesterProviderMark() {
     }
 
@@ -77,13 +62,13 @@ final class BetaTesterProviderMark {
     static String render(boolean isClaudeUse, boolean isGptUse, BetaTesterColors colors) {
         if (isClaudeUse && isGptUse) {
             return mark(PAIR_LEFT_X, CLAUDE_MARK, CLAUDE_FILL)
-                    + mark(PAIR_RIGHT_X, OPENAI_MARK, colors.textPrimary());
+                    + mark(PAIR_RIGHT_X, SvgLogo.OPENAI_PATH, colors.textPrimary());
         }
         if (isClaudeUse) {
             return mark(SINGLE_X, CLAUDE_MARK, CLAUDE_FILL);
         }
         if (isGptUse) {
-            return mark(SINGLE_X, OPENAI_MARK, colors.textPrimary());
+            return mark(SINGLE_X, SvgLogo.OPENAI_PATH, colors.textPrimary());
         }
         return "";
     }
