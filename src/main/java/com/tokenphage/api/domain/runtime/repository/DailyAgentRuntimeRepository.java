@@ -54,4 +54,17 @@ public interface DailyAgentRuntimeRepository extends JpaRepository<DailyAgentRun
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("DELETE FROM DailyAgentRuntime d WHERE d.githubId = :githubId")
     int deleteAllByGithubId(@Param("githubId") Long githubId);
+
+    /**
+     * 특정 사용자의 에이전트 누적 실행시간(ms)을 반환한다.
+     * <p>
+     * 기기·도구·모델·날짜 구분 없이 그 사용자의 모든 행을 더한다.
+     * github_id 로 조회하므로 idx_dar_github_date 인덱스를 사용한다.
+     *
+     * @param githubId 대상 사용자 (null 불허)
+     * @return 실행시간 합(ms). 기록이 없으면 null
+     * @Since 2026-11-13
+     */
+    @Query("SELECT SUM(d.runtimeMs) FROM DailyAgentRuntime d WHERE d.githubId = :githubId")
+    Long sumRuntimeMs(@Param("githubId") Long githubId);
 }
