@@ -8,6 +8,8 @@ import com.tokenphage.api.feature.badge.svg.theme.card.claude.CardClaudeBadgeThe
 import com.tokenphage.api.feature.badge.svg.theme.card.gpu.CardGpuBadgeTheme;
 import com.tokenphage.api.feature.badge.svg.theme.grass.claude.GrassClaudeBadgeTheme;
 import com.tokenphage.api.feature.badge.svg.theme.locked.LockedBadgeTheme;
+import com.tokenphage.api.feature.badge.svg.theme.odometer.claude.OdometerClaudeBadgeTheme;
+import com.tokenphage.api.feature.badge.svg.theme.odometer.gpt.OdometerGptBadgeTheme;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -27,11 +29,12 @@ class SvgBuilderTest {
 
     @BeforeEach
     void setUp() {
-        // 등록 테마 5종 전부 (실제 @Component 빈 주입과 동일한 구성)
+        // 등록 테마 7종 전부 (실제 @Component 빈 주입과 동일한 구성)
         // 미등록 시 normalizeTheme·resolveMode가 gpu로 폴백해 신규 케이스가 공허 통과하므로 반드시 포함한다.
         svgBuilder = new SvgBuilder(List.of(
                 new CardGpuBadgeTheme(), new CardClaudeBadgeTheme(), new GrassClaudeBadgeTheme(),
-                new BetaTesterBadgeTheme(), new LockedBadgeTheme()));
+                new BetaTesterBadgeTheme(), new LockedBadgeTheme(),
+                new OdometerClaudeBadgeTheme(), new OdometerGptBadgeTheme()));
     }
 
     private BadgeResponse sampleData() {
@@ -74,7 +77,9 @@ class SvgBuilderTest {
         @CsvSource({ "gpu, light", "gpu, dark", "claude, light", "claude, dark",
                      "grass-claude, light", "grass-claude, dark",
                      "beta-tester, cyan", "beta-tester, green", "beta-tester, purple",
-                     "locked, light" })
+                     "locked, light",
+                     "odometer-claude, light", "odometer-claude, dark",
+                     "odometer-gpt, light", "odometer-gpt, dark" })
         void badge_모든테마모드_저장소앵커로감쌈(String theme, String mode) {
             // given / when
             String svg = svgBuilder.build(sampleData(), theme, mode);
@@ -163,6 +168,67 @@ class SvgBuilderTest {
             // 미등록 theme은 normalizeTheme과 같은 폴백(gpu) 기준으로 모드를 정한다
             assertThat(svgBuilder.resolveMode("zzz999", "dark")).isEqualTo(BadgeMode.DARK);
             assertThat(svgBuilder.resolveMode("zzz999", "green")).isEqualTo(BadgeMode.LIGHT);
+        }
+    }
+
+    @Nested @DisplayName("주행거리계 테마 (odometer-claude · odometer-gpt)")
+    class Odometer {
+
+        @ParameterizedTest(name = "theme={0}")
+        @DisplayName("테마정규화_주행거리계테마_gpu로접지않고그대로반환")
+        @CsvSource({ "odometer-claude", "odometer-gpt" })
+        void 테마정규화_주행거리계테마_gpu로접지않고그대로반환(String theme) {
+            // given
+
+            // when
+            String normalized = svgBuilder.normalizeTheme(theme);
+
+            // then
+            assertThat(normalized).isEqualTo(theme);
+        }
+
+        @ParameterizedTest(name = "theme={0}, mode={1} → {2}")
+        @DisplayName("모드정규화_light와dark지정_지정한모드")
+        @CsvSource({
+            "odometer-claude, dark, DARK", "odometer-claude, light, LIGHT",
+            "odometer-gpt, dark, DARK", "odometer-gpt, light, LIGHT"
+        })
+        void 모드정규화_light와dark지정_지정한모드(String theme, String mode, BadgeMode expected) {
+            // given
+
+            // when
+            BadgeMode resolved = svgBuilder.resolveMode(theme, mode);
+
+            // then
+            assertThat(resolved).isEqualTo(expected);
+        }
+
+        @ParameterizedTest(name = "mode=\"{0}\" → LIGHT")
+        @DisplayName("모드정규화_미지정이나미지원값_기본light")
+        @CsvSource(value = { "NULL", "cyan" }, nullValues = "NULL")
+        void 모드정규화_미지정이나미지원값_기본light(String mode) {
+            // given
+
+            // when
+            BadgeMode resolved = svgBuilder.resolveMode("odometer-gpt", mode);
+
+            // then
+            assertThat(resolved).isEqualTo(BadgeMode.LIGHT);
+        }
+
+        @ParameterizedTest(name = "theme={0}")
+        @DisplayName("빌드_주행거리계테마_300x64캔버스")
+        @CsvSource({ "odometer-claude", "odometer-gpt" })
+        void 빌드_주행거리계테마_300x64캔버스(String theme) {
+            // given
+            BadgeResponse data = sampleData();
+
+            // when
+            String svg = svgBuilder.build(data, theme, "dark");
+
+            // then
+            // gpu로 접혔다면 540×210이 나온다
+            assertThat(svg).contains("width=\"300\" height=\"64\"");
         }
     }
 

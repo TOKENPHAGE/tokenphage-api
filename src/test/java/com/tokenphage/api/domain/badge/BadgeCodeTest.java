@@ -28,7 +28,9 @@ class BadgeCodeTest {
                 "CLAUDE, claude",
                 "GRASS_CLAUDE, grass-claude",
                 "BETA_TESTER, beta-tester",
-                "LOCKED, locked"
+                "LOCKED, locked",
+                "ODOMETER_CLAUDE, odometer-claude",
+                "ODOMETER_GPT, odometer-gpt"
         })
         @DisplayName("코드조회_각상수_정해진문자열반환")
         void 코드조회_각상수_정해진문자열반환(BadgeCode badgeCode, String expected) {
@@ -60,8 +62,8 @@ class BadgeCodeTest {
     class AllCodesTest {
 
         @Test
-        @DisplayName("전체코드_호출_등록된5종반환")
-        void 전체코드_호출_등록된5종반환() {
+        @DisplayName("전체코드_호출_등록된7종반환")
+        void 전체코드_호출_등록된7종반환() {
             // given
 
             // when
@@ -69,7 +71,8 @@ class BadgeCodeTest {
 
             // then
             assertThat(result).containsExactlyInAnyOrder(
-                    "gpu", "claude", "grass-claude", "beta-tester", "locked");
+                    "gpu", "claude", "grass-claude", "beta-tester", "locked",
+                    "odometer-claude", "odometer-gpt");
         }
 
         @Test

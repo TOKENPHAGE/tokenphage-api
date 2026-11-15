@@ -8,6 +8,8 @@ import com.tokenphage.api.feature.badge.svg.theme.card.claude.CardClaudeBadgeThe
 import com.tokenphage.api.feature.badge.svg.theme.card.gpu.CardGpuBadgeTheme;
 import com.tokenphage.api.feature.badge.svg.theme.grass.claude.GrassClaudeBadgeTheme;
 import com.tokenphage.api.feature.badge.svg.theme.locked.LockedBadgeTheme;
+import com.tokenphage.api.feature.badge.svg.theme.odometer.claude.OdometerClaudeBadgeTheme;
+import com.tokenphage.api.feature.badge.svg.theme.odometer.gpt.OdometerGptBadgeTheme;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -31,7 +33,8 @@ class BadgeCatalogConsistencyTest {
     /** badge_catalog 시드 INSERT를 담은 마이그레이션 목록. 새 배지의 시드 V파일을 여기에 추가한다. */
     private static final List<String> MIGRATION_PATHS = List.of(
             "/db/migration/V5__create_badge_catalog_and_grant.sql",
-            "/db/migration/V6__create_badge_snapshot.sql");
+            "/db/migration/V6__create_badge_snapshot.sql",
+            "/db/migration/V9__add_odometer_badges.sql");
 
     /** INSERT 문 각 행에서 첫 번째 컬럼(code)만 뽑는다. 예: ('gpu', 'GPU Card', false, NULL) */
     private static final Pattern SEED_ROW = Pattern.compile("\\(\\s*'([a-z0-9-]+)'\\s*,");
@@ -46,7 +49,9 @@ class BadgeCatalogConsistencyTest {
                 new CardClaudeBadgeTheme(),
                 new GrassClaudeBadgeTheme(),
                 new BetaTesterBadgeTheme(),
-                new LockedBadgeTheme());
+                new LockedBadgeTheme(),
+                new OdometerClaudeBadgeTheme(),
+                new OdometerGptBadgeTheme());
     }
 
     /**
