@@ -25,7 +25,7 @@ class LockedBadgeThemeTest {
 
     /** 잠금 배지는 데이터를 그리지 않지만 메서드 시그니처상 필요한 빈 데이터. */
     private BadgeResponse emptyData() {
-        return new BadgeResponse("example-user", 0L, List.of(), List.of(), 0.0, 0L, 0, List.of(), "");
+        return new BadgeResponse("example-user", 0L, List.of(), List.of(), 0.0, 0L, 0, List.of(), "", 0L);
     }
 
     @Nested

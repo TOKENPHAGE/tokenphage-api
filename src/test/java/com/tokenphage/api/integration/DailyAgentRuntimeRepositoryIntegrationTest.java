@@ -20,14 +20,14 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 실행시간 저장소의 쿼리(덮어쓰기, 행 분리, 삭제)를 실제 PostgreSQL 에 태워 검증한다.
+ * 실행시간 저장소의 쿼리(덮어쓰기, 행 분리, 삭제, 합계)를 실제 PostgreSQL 에 태워 검증한다.
  * <p>
  * 테스트마다 트랜잭션을 롤백해 공유 컨테이너 DB 에 행을 남기지 않는다.
  */
 @Tag("integration")
 @SpringBootTest
 @Transactional
-@DisplayName("DailyAgentRuntimeRepository 저장·삭제 쿼리")
+@DisplayName("DailyAgentRuntimeRepository 저장·삭제·합계 쿼리")
 class DailyAgentRuntimeRepositoryIntegrationTest extends ContainerSupport {
 
     // 싱글턴 컨테이너 DB를 통합테스트 클래스들이 공유하므로 다른 클래스와 겹치지 않는 값을 쓴다 (99901~99909 사용 중).
@@ -135,6 +135,56 @@ class DailyAgentRuntimeRepositoryIntegrationTest extends ContainerSupport {
             assertThat(deleted).isEqualTo(2);
             assertThat(rowsOf(GITHUB_ID)).isEmpty();
             assertThat(rowsOf(OTHER_GITHUB_ID)).containsExactly(new RuntimeRow(DEVICE_ID, DAY, SOURCE, MODEL, 3_000L));
+        }
+    }
+
+    @Nested
+    @DisplayName("sumRuntimeMs() - 사용자별 가동시간 합계")
+    class SumRuntimeMs {
+
+        @Test
+        @DisplayName("기기·도구·모델·날짜가 다른 행을 전부 더한다")
+        void 합계_기기도구모델날짜가다른행_전부더한값() {
+            // given
+            repository.upsertRecord(GITHUB_ID, DEVICE_ID, DAY, SOURCE, MODEL, 3_600_000L);
+            repository.upsertRecord(GITHUB_ID, OTHER_DEVICE_ID, DAY, SOURCE, MODEL, 1_800_000L);
+            repository.upsertRecord(GITHUB_ID, DEVICE_ID, DAY, "codex", "gpt-5.5", 900_000L);
+            repository.upsertRecord(GITHUB_ID, DEVICE_ID, DAY, "opencode", "claude-sonnet-4-6", 60_000L);
+            repository.upsertRecord(GITHUB_ID, DEVICE_ID, DAY.minusDays(40), SOURCE, MODEL, 5_000L);
+
+            // when
+            Long sum = repository.sumRuntimeMs(GITHUB_ID);
+
+            // then
+            assertThat(sum).isEqualTo(6_365_000L);
+        }
+
+        @Test
+        @DisplayName("그 사용자의 행이 없으면 null이다")
+        void 합계_행없음_null() {
+            // given
+            repository.upsertRecord(OTHER_GITHUB_ID, DEVICE_ID, DAY, SOURCE, MODEL, 3_000L);
+
+            // when
+            Long sum = repository.sumRuntimeMs(GITHUB_ID);
+
+            // then
+            assertThat(sum).isNull();
+        }
+
+        @Test
+        @DisplayName("다른 사용자의 행은 더하지 않는다")
+        void 합계_다른사용자행섞임_내행만더한값() {
+            // given
+            repository.upsertRecord(GITHUB_ID, DEVICE_ID, DAY, SOURCE, MODEL, 1_000L);
+            repository.upsertRecord(GITHUB_ID, DEVICE_ID, DAY, "codex", "gpt-5.5", 2_000L);
+            repository.upsertRecord(OTHER_GITHUB_ID, DEVICE_ID, DAY, SOURCE, MODEL, 40_000L);
+
+            // when
+            Long sum = repository.sumRuntimeMs(GITHUB_ID);
+
+            // then
+            assertThat(sum).isEqualTo(3_000L);
         }
     }
 }

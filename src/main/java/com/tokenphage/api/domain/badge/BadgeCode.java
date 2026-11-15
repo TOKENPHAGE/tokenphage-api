@@ -22,7 +22,13 @@ public enum BadgeCode {
     BETA_TESTER("beta-tester"),
 
     /** 자격이 없어 사용할 수 없음을 알리는 안내 배지. 사용자가 직접 고르는 테마는 아니다. */
-    LOCKED("locked");
+    LOCKED("locked"),
+
+    /** 에이전트 실행시간 뱃지 + Claude 마스코트 */
+    ODOMETER_CLAUDE("odometer-claude"),
+
+    /** 에이전트 실행시간 뱃지 + OpenAI 로고 */
+    ODOMETER_GPT("odometer-gpt");
 
     private final String code;
 

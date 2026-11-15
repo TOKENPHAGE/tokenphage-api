@@ -87,7 +87,7 @@ class BadgeRenderServiceTest {
      * 배지 데이터를 위한 테스트 전용 픽스처를 생성한다 (메모리 전용, 실 DB 미접촉).
      */
     private BadgeResponse sampleData() {
-        return new BadgeResponse(USERNAME, 12_345L, List.of(), List.of(), 0.5, 0L, 0, List.of(), "");
+        return new BadgeResponse(USERNAME, 12_345L, List.of(), List.of(), 0.5, 0L, 0, List.of(), "", 0L);
     }
 
     /** theme이 이미 정규화된 값(gpu)이고 mode가 LIGHT로 확정될 때의 정규화 스텁. */
