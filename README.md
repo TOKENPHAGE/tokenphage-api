@@ -46,6 +46,20 @@ GitHub 잔디가 당신의 커밋을 보여주듯, **TokenPhage**는 Claude Code
       <code>[![Tokenphage](https://api.tokenphage.com/badge/&lt;your-github-name&gt;?theme=grass-claude)](https://github.com/TOKENPHAGE)</code>
     </td>
   </tr>
+  <tr>
+    <td align="center"><strong>odometer-claude · light</strong></td>
+    <td align="center"><strong>odometer-gpt · dark</strong></td>
+  </tr>
+  <tr>
+    <td align="center">
+      <a href="https://github.com/TOKENPHAGE"><img src="https://api.tokenphage.com/badge/kobenlys?theme=odometer-claude" alt="TokenPhage odometer-claude light 배지"></a><br/>
+      <code>[![Tokenphage](https://api.tokenphage.com/badge/&lt;your-github-name&gt;?theme=odometer-claude)](https://github.com/TOKENPHAGE)</code>
+    </td>
+    <td align="center">
+      <a href="https://github.com/TOKENPHAGE"><img src="https://api.tokenphage.com/badge/kobenlys?theme=odometer-gpt&amp;mode=dark" alt="TokenPhage odometer-gpt dark 배지"></a><br/>
+      <code>[![Tokenphage](https://api.tokenphage.com/badge/&lt;your-github-name&gt;?theme=odometer-gpt&amp;mode=dark)](https://github.com/TOKENPHAGE)</code>
+    </td>
+  </tr>
 </table>
 
 </div>
@@ -57,6 +71,7 @@ GitHub 잔디가 당신의 커밋을 보여주듯, **TokenPhage**는 Claude Code
 - 🔥 **누적 토큰 사용량**
 - 📅 **최근 30일 히트맵**
 - 📊 **모델별 집계**
+- ⏱️ **AI 에이전트 누적 실행시간**
 - 👾 **레벨 마스코트**
 - ➕ **그 외 다양한 정보 (ETC)**
 
@@ -99,7 +114,7 @@ tokenphage
 
 ## 🎨 테마 & 레벨
 
-배지는 쿼리 파라미터로 외형(테마·색상)을 바꿀 수 있습니다. **테마마다 담기는 정보와 표현 방식이 다르며**(마스코트 진화 · 잔디 그리드 등), 새 테마는 계속 추가됩니다.
+배지는 쿼리 파라미터로 외형(테마·색상)을 바꿀 수 있습니다. **테마마다 담기는 정보와 표현 방식이 다르며**(마스코트 진화 · 잔디 그리드 · Agent 실행시간 등), 새 테마는 계속 추가됩니다.
 
 ```markdown
 [![Tokenphage](https://api.tokenphage.com/badge/<your-github-name>?theme=claude&mode=dark)](https://github.com/TOKENPHAGE)
