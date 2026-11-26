@@ -1,0 +1,6 @@
+{
+  "scripts": {
+    "test":        { "command": "./mvnw test" },
+    "integration": { "command": "./mvnw verify -Dtest=NONE -Dsurefire.failIfNoSpecifiedTests=false" }
+  }
+}
