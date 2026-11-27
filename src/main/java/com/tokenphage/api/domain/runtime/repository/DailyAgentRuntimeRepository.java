@@ -23,15 +23,15 @@ public interface DailyAgentRuntimeRepository extends JpaRepository<DailyAgentRun
      * @param source    로그를 읽은 도구 (claude, codex, opencode)
      * @param model     모델 이름 (최대 80자)
      * @param runtimeMs 그 날짜·도구·모델의 실행시간 합(ms, 0 이상)
-     * @Since 2026-10-11
+     * @Since 2026-11-11
      */
     @Modifying
-    @Query(value = """
-        INSERT INTO daily_agent_runtime (github_id, device_id, usage_date, source, model, runtime_ms)
+    @Query("""
+        INSERT INTO DailyAgentRuntime (githubId, deviceId, usageDate, source, model, runtimeMs)
         VALUES (:githubId, :deviceId, :usageDate, :source, :model, :runtimeMs)
-        ON CONFLICT (github_id, device_id, usage_date, source, model)
-        DO UPDATE SET runtime_ms = EXCLUDED.runtime_ms
-        """, nativeQuery = true)
+        ON CONFLICT (githubId, deviceId, usageDate, source, model)
+        DO UPDATE SET runtimeMs = excluded.runtimeMs
+        """)
     void upsertRecord(
         @Param("githubId")  Long githubId,
         @Param("deviceId")  UUID deviceId,
@@ -49,9 +49,22 @@ public interface DailyAgentRuntimeRepository extends JpaRepository<DailyAgentRun
      *
      * @param githubId 대상 사용자 (JWT sub에서 파생, null 불허)
      * @return 삭제된 행 수
-     * @Since 2026-10-11
+     * @Since 2026-11-11
      */
     @Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query(value = "DELETE FROM daily_agent_runtime WHERE github_id = :githubId", nativeQuery = true)
+    @Query("DELETE FROM DailyAgentRuntime d WHERE d.githubId = :githubId")
     int deleteAllByGithubId(@Param("githubId") Long githubId);
+
+    /**
+     * 특정 사용자의 에이전트 누적 실행시간(ms)을 반환한다.
+     * <p>
+     * 기기·도구·모델·날짜 구분 없이 그 사용자의 모든 행을 더한다.
+     * github_id 로 조회하므로 idx_dar_github_date 인덱스를 사용한다.
+     *
+     * @param githubId 대상 사용자 (null 불허)
+     * @return 실행시간 합(ms). 기록이 없으면 null
+     * @Since 2026-11-13
+     */
+    @Query("SELECT SUM(d.runtimeMs) FROM DailyAgentRuntime d WHERE d.githubId = :githubId")
+    Long sumRuntimeMs(@Param("githubId") Long githubId);
 }

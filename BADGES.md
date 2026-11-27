@@ -14,6 +14,9 @@ TokenPhage가 제공하는 배지 전체 목록입니다. 처음이라면 [READM
 - [🖥️ gpu — 기본 테마](#️-gpu--기본-테마)
 - [👾 claude](#-claude)
 - [🌱 grass-claude](#-grass-claude)
+- [🚗 odometer — Agent 실행시간](#-odometer--agent-실행시간)
+  - [odometer-claude](#odometer-claude)
+  - [odometer-gpt](#odometer-gpt)
 - [🏅 beta-tester — 자격 배지](#-beta-tester--자격-배지)
   - [🔒 locked](#-locked)
 - [⏱️ 참고](#️-참고)
@@ -40,7 +43,7 @@ README(이미지를 붙일 수 있는 곳이면 어디든)에 아래 한 줄을 
 
 | 파라미터 | 값 | 기본값 | 설명 |
 |---------|-----|-------|------|
-| `theme` | `gpu` · `claude` · `grass-claude` · `beta-tester` | `gpu` | 배지 스킨 (마스코트·레이아웃·색 팔레트가 달라짐) |
+| `theme` | `gpu` · `claude` · `grass-claude` · `odometer-claude` · `odometer-gpt` · `beta-tester` | `gpu` | 배지 스킨 (마스코트·레이아웃·색 팔레트가 달라짐) |
 | `mode` | 테마마다 다름 (아래 표) | 테마마다 다름 | 색상 |
 
 ### 테마별 지원 mode
@@ -50,6 +53,8 @@ README(이미지를 붙일 수 있는 곳이면 어디든)에 아래 한 줄을 
 | `gpu` | `light` · `dark` | `light` |
 | `claude` | `light` · `dark` | `light` |
 | `grass-claude` | `light` · `dark` | `light` |
+| `odometer-claude` | `light` · `dark` | `light` |
+| `odometer-gpt` | `light` · `dark` | `light` |
 | `beta-tester` | `cyan` · `green` · `purple` | `cyan` |
 
 > 지원하지 않는 `mode`를 넣어도 오류가 나지 않고, 그 테마의 기본값으로 표시됩니다.
@@ -165,6 +170,64 @@ README(이미지를 붙일 수 있는 곳이면 어디든)에 아래 한 줄을 
 <a href="https://github.com/TOKENPHAGE"><img src="https://api.tokenphage.com/badge/kobenlys?theme=grass-claude&amp;mode=dark" alt="TokenPhage grass-claude dark 배지"></a>
 
 `[![Tokenphage](https://api.tokenphage.com/badge/<your-github-name>?theme=grass-claude&mode=dark)](https://github.com/TOKENPHAGE)`
+
+</div>
+
+<br/>
+
+---
+
+## 🚗 odometer — Agent 실행시간
+
+**부여 조건** · 기본 제공 — CLI로 로그인하고 한 번 동기화하면 바로 쓸 수 있습니다.
+
+AI Agent 누적 작업 실행시간 뱃지
+
+> 실행시간은 CLI `2026.11.1`부터 수집합니다. 기록이 없으면 `000000`으로 표시됩니다.
+
+### odometer-claude
+
+<div align="center">
+
+<table>
+  <tr>
+    <td align="center"><strong>light · 기본</strong></td>
+    <td align="center"><strong>dark</strong></td>
+  </tr>
+  <tr>
+    <td align="center">
+      <a href="https://github.com/TOKENPHAGE"><img src="https://api.tokenphage.com/badge/kobenlys?theme=odometer-claude" alt="TokenPhage odometer-claude light 배지"></a><br/>
+      <code>[![Tokenphage](https://api.tokenphage.com/badge/&lt;your-github-name&gt;?theme=odometer-claude)](https://github.com/TOKENPHAGE)</code>
+    </td>
+    <td align="center">
+      <a href="https://github.com/TOKENPHAGE"><img src="https://api.tokenphage.com/badge/kobenlys?theme=odometer-claude&amp;mode=dark" alt="TokenPhage odometer-claude dark 배지"></a><br/>
+      <code>[![Tokenphage](https://api.tokenphage.com/badge/&lt;your-github-name&gt;?theme=odometer-claude&amp;mode=dark)](https://github.com/TOKENPHAGE)</code>
+    </td>
+  </tr>
+</table>
+
+</div>
+
+### odometer-gpt
+
+<div align="center">
+
+<table>
+  <tr>
+    <td align="center"><strong>light · 기본</strong></td>
+    <td align="center"><strong>dark</strong></td>
+  </tr>
+  <tr>
+    <td align="center">
+      <a href="https://github.com/TOKENPHAGE"><img src="https://api.tokenphage.com/badge/kobenlys?theme=odometer-gpt" alt="TokenPhage odometer-gpt light 배지"></a><br/>
+      <code>[![Tokenphage](https://api.tokenphage.com/badge/&lt;your-github-name&gt;?theme=odometer-gpt)](https://github.com/TOKENPHAGE)</code>
+    </td>
+    <td align="center">
+      <a href="https://github.com/TOKENPHAGE"><img src="https://api.tokenphage.com/badge/kobenlys?theme=odometer-gpt&amp;mode=dark" alt="TokenPhage odometer-gpt dark 배지"></a><br/>
+      <code>[![Tokenphage](https://api.tokenphage.com/badge/&lt;your-github-name&gt;?theme=odometer-gpt&amp;mode=dark)](https://github.com/TOKENPHAGE)</code>
+    </td>
+  </tr>
+</table>
 
 </div>
 

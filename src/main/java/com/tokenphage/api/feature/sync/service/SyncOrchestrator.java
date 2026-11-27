@@ -23,24 +23,35 @@ public class SyncOrchestrator {
     /**
      * 토큰 사용 기록과 실행시간 동기화 전체 흐름을 조율한다.
      * <p>
-     * 사용자 저장 → 토큰 레코드 저장 → 배지 캐시 무효화 → 실행시간 저장 순서로 실행한다.
-     * 실행시간은 토큰과 다른 트랜잭션이라 실패해도 토큰은 남는다. runtimes 칸이 없으면 빈 목록이라 실행시간 표에 쓰지 않는다.
+     * 사용자 저장 → 토큰 레코드 저장 → 실행시간 저장 → 배지 캐시 무효화 순서로 실행한다.
      *
      * @param jwt JWT 토큰 (githubId, username 추출에 사용)
      * @param req 동기화 요청 (deviceId, 토큰 레코드 목록, 실행시간 목록 포함)
      * @return 실행시간 처리 결과 (runtimes 칸이 없거나 비면 0건)
-     * @Since 2026-10-29
+     * @Since 2026-11-13
      */
     public SyncResponse sync(Jwt jwt, SyncRequest req) {
         Long githubId = Long.parseLong(jwt.getSubject());
         String username = jwt.getClaimAsString("username");
+        RuntimeSyncResultResponse runtimes;
+      
         log.info("Sync started: githubId={}, username={}, deviceId={}, records={}, runtimes={}",
                 githubId, username, req.deviceId(), req.records().size(), req.runtimes().size());
 
+        // #1. User 업데이트
         userService.saveUser(githubId, username);
+        // #2. Token 사용량 저장
         tokenUsageRecordService.saveRecords(jwt, req);
+        // #3. AI Agent 실행 시간 저장
+        try {
+            runtimes = runtimeRecordService.saveRecords(jwt, req);
+        } catch (RuntimeException e) {
+            log.error("Runtime save failed, evicting badge cache: githubId={}, username={}", githubId, username, e);
+            badgeCacheInvalidator.evict(username);
+            throw e;
+        }
+        // #3. Redis Badge 캐싱 제거
         badgeCacheInvalidator.evict(username);
-        RuntimeSyncResultResponse runtimes = runtimeRecordService.saveRecords(jwt, req);
         log.info("Sync completed: githubId={}, username={}, runtimesAccepted={}, runtimesRejected={}",
                 githubId, username, runtimes.accepted(), runtimes.rejected());
         return new SyncResponse(runtimes);

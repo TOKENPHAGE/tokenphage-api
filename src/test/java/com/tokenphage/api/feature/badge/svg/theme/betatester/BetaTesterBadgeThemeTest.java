@@ -38,7 +38,7 @@ class BetaTesterBadgeThemeTest {
     }
 
     private static BadgeResponse data(String username, String snapshotJson) {
-        return new BadgeResponse(username, 0L, List.of(), List.of(), 0.0, 0L, 0, List.of(), snapshotJson);
+        return new BadgeResponse(username, 0L, List.of(), List.of(), 0.0, 0L, 0, List.of(), snapshotJson, 0L);
     }
 
     private static int countOccurrences(String text, String token) {

@@ -2,6 +2,8 @@ package com.tokenphage.api.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tokenphage.api.domain.badge.repository.BadgeSnapshotRepository;
+import com.tokenphage.api.domain.badge.repository.entity.BadgeSnapshot;
+import com.tokenphage.api.domain.badge.repository.entity.BadgeSnapshotId;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -16,14 +18,14 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * findPayload 의 native 쿼리와 V6 DB 함수 badge_compact_number 를 실제 PostgreSQL 에 태워 검증한다.
+ * 스냅샷 payload 조회(findById)와 V6 DB 함수 badge_compact_number 를 실제 PostgreSQL 에 태워 검증한다.
  * <p>
- * 컴파일러가 못 잡는 계약이 대상이다 — 복합 PK WHERE 절, payload::text 캐스팅, jsonb 왕복,
- * 축약 표시 문자열. 컨테이너 DB 를 공유하고 롤백이 없어 AfterEach 에서 FK 역순으로 정리한다.
+ * 컴파일러가 못 잡는 계약이 대상이다 — 복합 PK 매핑(@IdClass), jsonb 컬럼을 String 으로 읽는 매핑,
+ * jsonb 왕복, 축약 표시 문자열. 컨테이너 DB 를 공유하고 롤백이 없어 AfterEach 에서 FK 역순으로 정리한다.
  */
 @Tag("integration")
 @SpringBootTest
-@DisplayName("BadgeSnapshotRepository native 쿼리와 badge_compact_number")
+@DisplayName("BadgeSnapshotRepository payload 조회와 badge_compact_number")
 class BadgeSnapshotRepositoryIntegrationTest extends ContainerSupport {
 
     /** V7 이 시드하는 자격 필요 배지 코드. 시드 행이므로 절대 삭제하지 않는다. */
@@ -80,13 +82,20 @@ class BadgeSnapshotRepositoryIntegrationTest extends ContainerSupport {
             """, githubId, badgeCode, payloadJson);
     }
 
-    /** 격리 테스트용 최소 payload. findPayload 는 스키마를 검증하지 않으므로 marker 하나면 충분하다. */
+    /** 격리 테스트용 최소 payload. 조회는 스키마를 검증하지 않으므로 marker 하나면 충분하다. */
     private static String markerPayload(int rank) {
         return "{\"signupRank\": %d}".formatted(rank);
     }
 
+    /** BadgeQueryService 와 같은 방식으로 payload 를 꺼낸다. 행이 없으면 null. */
+    private String findPayload(long githubId, String badgeCode) {
+        return repository.findById(new BadgeSnapshotId(githubId, badgeCode))
+                .map(BadgeSnapshot::getPayload)
+                .orElse(null);
+    }
+
     @Nested
-    @DisplayName("findPayload() - 조회 성공과 jsonb 왕복")
+    @DisplayName("findById() - 조회 성공과 jsonb 왕복")
     class RoundTrip {
 
         @Test
@@ -97,7 +106,7 @@ class BadgeSnapshotRepositoryIntegrationTest extends ContainerSupport {
             insertSnapshot(GITHUB_ID, BADGE_CODE, PAYLOAD_JSON);
 
             // when
-            String found = repository.findPayload(GITHUB_ID, BADGE_CODE);
+            String found = findPayload(GITHUB_ID, BADGE_CODE);
 
             // then: jsonb는 저장 시 키 순서·공백을 정규화하므로 원문 문자열 비교 대신 트리 동등성으로 검증한다
             assertThat(found).isNotNull();
@@ -106,7 +115,7 @@ class BadgeSnapshotRepositoryIntegrationTest extends ContainerSupport {
     }
 
     @Nested
-    @DisplayName("findPayload() - 행 없음과 복합키 격리")
+    @DisplayName("findById() - 행 없음과 복합키 격리")
     class MissingAndIsolation {
 
         @Test
@@ -117,9 +126,9 @@ class BadgeSnapshotRepositoryIntegrationTest extends ContainerSupport {
             insertUser(GITHUB_ID, USERNAME);
 
             // when
-            String found = repository.findPayload(GITHUB_ID, BADGE_CODE);
+            String found = findPayload(GITHUB_ID, BADGE_CODE);
 
-            // then: WHERE 복합 PK가 매칭되지 않아 행이 없다
+            // then: 복합 PK가 매칭되지 않아 행이 없다
             assertThat(found).isNull();
         }
 
@@ -132,10 +141,10 @@ class BadgeSnapshotRepositoryIntegrationTest extends ContainerSupport {
             insertSnapshot(GITHUB_ID, OTHER_BADGE_CODE, markerPayload(2));
 
             // when
-            String betaTester = repository.findPayload(GITHUB_ID, BADGE_CODE);
-            String gpu = repository.findPayload(GITHUB_ID, OTHER_BADGE_CODE);
+            String betaTester = findPayload(GITHUB_ID, BADGE_CODE);
+            String gpu = findPayload(GITHUB_ID, OTHER_BADGE_CODE);
 
-            // then: bs.badge_code = :badgeCode 조건이 행을 구분한다
+            // then: 복합 PK의 badge_code 축이 행을 구분한다
             assertThat(MAPPER.readTree(betaTester).path("signupRank").asInt()).isEqualTo(1);
             assertThat(MAPPER.readTree(gpu).path("signupRank").asInt()).isEqualTo(2);
         }
@@ -150,10 +159,10 @@ class BadgeSnapshotRepositoryIntegrationTest extends ContainerSupport {
             insertSnapshot(OTHER_GITHUB_ID, BADGE_CODE, markerPayload(2));
 
             // when
-            String mine = repository.findPayload(GITHUB_ID, BADGE_CODE);
-            String others = repository.findPayload(OTHER_GITHUB_ID, BADGE_CODE);
+            String mine = findPayload(GITHUB_ID, BADGE_CODE);
+            String others = findPayload(OTHER_GITHUB_ID, BADGE_CODE);
 
-            // then: bs.github_id = :githubId 조건이 타인의 행을 걸러낸다
+            // then: 복합 PK의 github_id 축이 타인의 행을 걸러낸다
             assertThat(MAPPER.readTree(mine).path("signupRank").asInt()).isEqualTo(1);
             assertThat(MAPPER.readTree(others).path("signupRank").asInt()).isEqualTo(2);
         }

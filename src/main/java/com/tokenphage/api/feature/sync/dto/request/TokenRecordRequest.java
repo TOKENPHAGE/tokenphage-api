@@ -34,7 +34,7 @@ public record TokenRecordRequest(
 ) {
 
     /**
-     * daily_token_usage.model 컬럼 폭(V1__init.sql). 초과하면 네이티브 INSERT 에서
+     * daily_token_usage.model 컬럼 폭(V1__init.sql). 초과하면 INSERT 에서
      * Postgres 22001 이 나고 @Transactional 이라 sync 배치 전체가 롤백된다.
      */
     public static final int MODEL_MAX_LENGTH = 80;
